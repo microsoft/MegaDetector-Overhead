@@ -38,7 +38,6 @@ jupyter notebook demo/overhead_demo.ipynb
 | [microsoft/MegaDetector-Acoustic](https://github.com/microsoft/MegaDetector-Acoustic) | Bioacoustic AI for audio-based wildlife monitoring |
 | [microsoft/MegaDetector-Sonar](https://github.com/microsoft/MegaDetector-Sonar) | Sonar-based wildlife detection for aquatic monitoring |
 | [microsoft/SPARROW](https://github.com/microsoft/SPARROW) | Solar-Powered Acoustic and Remote Recording Observation Watch |
-| [microsoft/SPARROW-Studio](https://github.com/microsoft/SPARROW-Studio) | Desktop application for all AI for Good Lab models |
 
 ---
 
