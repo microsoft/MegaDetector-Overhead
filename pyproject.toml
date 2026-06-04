@@ -1,0 +1,125 @@
+[project]
+name = "megadetector-overhead"
+version = "0.1.0"
+description = "Wildlife detection in overhead and aerial imagery (HerdNet + DINOv3 training/eval stack)."
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+requires-python = ">=3.11,<3.13"
+authors = [
+    { name = "Microsoft AI for Good Lab" },
+]
+keywords = ["wildlife", "drone", "aerial-imagery", "detection", "pytorch", "dinov3", "herdnet"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # ── Deep learning core ──────────────────────────────────────────────
+    "torch>=2.0",
+    "torchvision",
+    "torchmetrics",
+
+    # ── Numerical / scientific ──────────────────────────────────────────
+    "numpy",
+    "pandas",
+    "pillow",
+    "opencv-python-headless",
+    "scikit-learn",
+    "scikit-image",
+    "matplotlib",
+    "tqdm",
+    "pyyaml",
+
+    # ── Config / experiment tracking ────────────────────────────────────
+    "hydra-core",
+    "omegaconf",
+    "wandb",
+
+    # ── Augmentation / vision ───────────────────────────────────────────
+    "albumentations",
+
+    # ── DINOv3 transitive dependencies (also declared by dinov3/setup.py;
+    #    re-declared here so uv's resolver pins them at the project level) ──
+    "ftfy",
+    "regex",
+    "iopath",
+    "submitit",
+    "termcolor",
+
+    # ── Geospatial (used by tools/patcher.py for georeferenced rasters) ──
+    "rasterio",
+    "geopandas",
+    "fiona",
+    "shapely",
+    "affine",
+
+    # ── Networking / I/O helpers used by animaloc ───────────────────────
+    "huggingface-hub",
+    "requests",
+
+    # ── Vendored DINOv3 (installed editably from ./dinov3 via [tool.uv.sources]) ──
+    "dinov3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "pymdown-extensions",
+]
+
+[project.urls]
+Homepage = "https://github.com/microsoft/MegaDetector-Overhead"
+Documentation = "https://microsoft.github.io/MegaDetector-Overhead/"
+Repository = "https://github.com/microsoft/MegaDetector-Overhead"
+Issues = "https://github.com/microsoft/MegaDetector-Overhead/issues"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# uv configuration: install the vendored DINOv3 from the in-tree path,
+# editable, instead of resolving it from PyPI (where it does not exist).
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.uv.sources]
+dinov3 = { path = "dinov3", editable = true }
+
+[tool.uv]
+# Keep the root project itself editable in the .venv so `import animaloc`
+# picks up local edits without a re-sync.
+package = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build system: setuptools is enough — we only ship the animaloc package
+# from the repo root. DINOv3 has its own setup.py and is installed as a
+# separate distribution from ./dinov3.
+# ─────────────────────────────────────────────────────────────────────────────
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["animaloc*"]
+exclude = ["dinov3*", "tools*", "configs*", "docs*", "tests*"]
+
+[tool.setuptools.package-data]
+animaloc = ["**/*.yaml", "**/*.yml"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ruff (linter / formatter) — matches the line length used by DINOv3 to keep
+# style consistent across the repo.
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["dinov3"]
