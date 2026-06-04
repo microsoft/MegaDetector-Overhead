@@ -1,0 +1,55 @@
+# 2026-05-07: per-patch evaluation of the 2026-05-05 best HerdNet checkpoint
+# against the post-fix Caribou_test_patches_and_csv/gt.csv (12,480 rows after
+# the lens-fallback fix recovered ~107 dots in GRP_8 m_0_0/m_2_0 + GRP_9 m_0_0).
+#
+# Mirrors the training validation config (configs/train/herdnet_loc_branch_
+# caribou_finetuning_2026-05-postfix_aug_lr.yaml) so the resulting numbers are
+# directly comparable to the F1 0.9367 reported at epoch 14 of training.
+wandb_project: 'herdnet'
+wandb_entity: 'idchacon'
+wandb_run: 'herdnet_caribou_eval_patches_postfix'
+device_name: 'cuda'
+
+model:
+  name: 'OWLC'
+  from_torchvision: False
+  pth_file: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2026-05-05/postfix-aug_lr-2026-05-05/best_model.pth'
+  kwargs:
+    num_layers: 34
+    pretrained: False
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_test_patches_and_csv/gt.csv'
+  root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_test_patches_and_csv'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  # threshold = 10 heatmap pixels = 20 image pixels (match radius)
+  # Matches the training validation convention so the resulting F1/P/R are
+  # directly comparable to the per-epoch validation log.
+  threshold: 10
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'

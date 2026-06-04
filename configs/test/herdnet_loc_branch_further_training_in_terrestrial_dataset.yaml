@@ -1,0 +1,47 @@
+wandb_project: 'herdnet'
+wandb_entity: 'idchacon'
+wandb_run: 'herdnet_terrestrial_datasets'
+device_name: 'cuda'
+
+model: 
+  name: 'OWLC'
+  from_torchvision: False
+  pth_file: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-03-26/04-51-55/best_model.pth'
+  kwargs:
+    num_layers: 34
+    pretrained: False
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512,512]
+  anno_type: 'point'
+  #num_classes: 2 # background and animal
+  collate_fn: null
+
+  class_def:
+      0: 'background'
+      1: 'animal'
+
+  name: 'CSVDataset'
+  csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv/gt.csv'
+  root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  threshold: 10
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3,3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'

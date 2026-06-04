@@ -1,0 +1,56 @@
+# 2026-05-05: full-deployment inference of the post-fix-trained HerdNet
+# checkpoint over the CAH 2022 50-frame survey.
+#
+# Differs from herdnet_caribou_inference_post_fix.yaml in:
+#   - model.pth_file: 2026-05-05 best_model (epoch 14, val F1 0.9367)
+#   - GT CSV unchanged: caribou_counts_CAH_2022_EPSG4326_postprocessed.csv
+#     (12,599 GT rows across 37 TIFs; 13 TIFs are zero-GT specificity controls)
+#   - root_dir unchanged: post-processed seamline CAH dir (44 TIFs after lens
+#     routing post-fix)
+#   - evaluator.threshold: 20 heatmap pixels = 40 image pixels match radius
+#     (paper convention)
+wandb_project: 'herdnet'
+wandb_entity: 'idchacon'
+wandb_run: 'herdnet_caribou_inference_2026-05-postfix'
+device_name: 'cuda'
+
+model:
+  name: 'OWLC'
+  from_torchvision: False
+  pth_file: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2026-05-05/postfix-aug_lr-2026-05-05/best_model.pth'
+  kwargs:
+    num_layers: 34
+    pretrained: False
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/CAH_2022/counts/caribou_counts_CAH_2022_EPSG4326_postprocessed_lensrouted.csv'
+  root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Postprocessed_Data_With_Seamlines_Final_CAH_2022'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  threshold: 20
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'
