@@ -21,8 +21,8 @@ from .dla import *
 from .herdnet import *
 from .utils import *
 from .ss_dla import *
-from .herdnet_detection_branch import *
-from .herdnet_hybrid_multiscale_residual import *
-from .herdnet_dinov2 import *
+from .owl_c import *
+from .owl_t import *
+from .owl_d import *
 
 __all__ = ['MODELS', *MODELS.registry_names]

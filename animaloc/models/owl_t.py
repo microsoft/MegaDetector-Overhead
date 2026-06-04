@@ -322,13 +322,19 @@ class MultiscaleSwinTransformer(nn.Module):
 
 
 @MODELS.register()
-class HerdNet_Hybrid_Multiscale_Residual(nn.Module):
+class OWLT(nn.Module):
     """
-    HerdNet con:
+    OWL-T: HerdNet + Swin transformer hybrid multiscale residual model.
+
+    Architecture:
       - DLA backbone (return_levels=True)
-      - Swin multiescala para refinar features (residual por escala)
-      - DLAUp decoder desde first_level (con down_ratio típico = 2)
-      - Head de localización (heatmap)
+      - Swin multiscale to refine features (residual per scale)
+      - DLAUp decoder from first_level (typical down_ratio = 2)
+      - Localization head (heatmap)
+
+    Vendored from HerdNet's herdnet_hybrid_multiscale_residual.py
+    (Université de Liège, MIT). Renamed to OWLT for the
+    MegaDetector-Overhead release.
     """
 
     def __init__(

@@ -12,8 +12,12 @@ from . import dla as dla_modules
 
 
 @MODELS.register()
-class HerdNet_Detection_Branch(nn.Module):
-    ''' HerdNet architecture using only the detection branch '''
+class OWLC(nn.Module):
+    ''' OWL-C: HerdNet detection-branch model (DLA backbone + detection head).
+
+    Vendored from HerdNet's herdnet_detection_branch.py (Université de
+    Liège, MIT). Renamed to OWLC for the MegaDetector-Overhead release.
+    '''
 
     def __init__(
         self,
@@ -33,7 +37,7 @@ class HerdNet_Detection_Branch(nn.Module):
             head_conv (int, optional): number of supplementary convolutional layers at the end 
                 of decoder. Defaults to 64.
         '''
-        super(HerdNet_Detection_Branch, self).__init__()
+        super(OWLC, self).__init__()
 
         assert down_ratio in [1, 2, 4, 8, 16], \
             f'Downsample ratio possible values are 1, 2, 4, 8 or 16, got {down_ratio}'

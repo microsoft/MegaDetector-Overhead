@@ -7,7 +7,9 @@ Key improvements over herdnet_dino.py (v1):
   - CLS token ReadProj fusion ("project" / "add" / "ignore")
   - Padding for arbitrary input resolutions (non-multiples of 16), crop after
   - forward_from_features() entry point for pre-extracted feature caching
-  - HerdNetDINO_S / _B / _L / _H as clean, registered subclasses
+  - OWLD_S / _B / _L / _H as clean, registered subclasses (OWL-D family,
+    vendored from HerdNet's herdnet_dinov2.py — Université de Liège, MIT —
+    and renamed for the MegaDetector-Overhead release)
 
 Architecture (per-forward summary):
   Input [B, 3, H, W]
@@ -41,10 +43,10 @@ from .register import MODELS
 
 __all__ = [
     'DinoV3DPTDecoder',
-    'HerdNetDINO_S',
-    'HerdNetDINO_B',
-    'HerdNetDINO_L',
-    'HerdNetDINO_H',
+    'OWLD_S',
+    'OWLD_B',
+    'OWLD_L',
+    'OWLD_H',
 ]
 
 _VALID_DOWN_RATIOS = (1, 2, 4)
@@ -864,7 +866,7 @@ class DinoV3DPTDecoder(nn.Module):
 # ---------------------------------------------------------------------------
 
 @MODELS.register()
-class HerdNetDINO_S(DinoV3DPTDecoder):
+class OWLD_S(DinoV3DPTDecoder):
     """DINOv3 ViT-S/16 backbone (embed=384, 12 blocks, ~22M backbone params).
 
     Lightest variant.  Benefits most from full backbone fine-tuning
@@ -878,7 +880,7 @@ class HerdNetDINO_S(DinoV3DPTDecoder):
 
 
 @MODELS.register()
-class HerdNetDINO_B(DinoV3DPTDecoder):
+class OWLD_B(DinoV3DPTDecoder):
     """DINOv3 ViT-B/16 backbone (embed=768, 12 blocks, ~86M backbone params).
 
     Good balance of quality and speed.  Partial fine-tuning (unfreeze_last_n=3)
@@ -892,7 +894,7 @@ class HerdNetDINO_B(DinoV3DPTDecoder):
 
 
 @MODELS.register()
-class HerdNetDINO_L(DinoV3DPTDecoder):
+class OWLD_L(DinoV3DPTDecoder):
     """DINOv3 ViT-L/16 backbone (embed=1024, 24 blocks, ~307M backbone params).
 
     High-quality features; recommended for frozen-backbone + feature-caching
@@ -909,7 +911,7 @@ class HerdNetDINO_L(DinoV3DPTDecoder):
 
 
 @MODELS.register()
-class HerdNetDINO_H(DinoV3DPTDecoder):
+class OWLD_H(DinoV3DPTDecoder):
     """DINOv3 ViT-H+/16 backbone (embed=1280, 32 blocks, ~840M backbone params).
 
     Highest-quality features.  Strongly recommended to use frozen backbone with
