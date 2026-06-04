@@ -22,14 +22,7 @@ from .herdnet import *
 from .utils import *
 from .ss_dla import *
 from .herdnet_detection_branch import *
-from .herdnet_detection_count_branch import *
-from .herdnet_counting_branch import *
-from .herdnet_vit_detection_branch import *
-from .herdnet_hybrid_vit_detection_branch import *
-from .herdnet_hybrid_vit_multiscale_detection_branch import *
 from .herdnet_hybrid_multiscale_residual import *
-from .herdnet_mhsa_detection_branch import *
-#from .herdnet_dino import *
 from .herdnet_dinov2 import *
 
 __all__ = ['MODELS', *MODELS.registry_names]
