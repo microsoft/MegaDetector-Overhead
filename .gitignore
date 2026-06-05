@@ -30,6 +30,7 @@ logs_*/
 outputs/
 wandb/
 weights/
+weights
 
 # Local secrets / credentials
 *.pem

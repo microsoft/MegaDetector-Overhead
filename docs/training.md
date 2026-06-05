@@ -151,3 +151,34 @@ class MyModel(nn.Module):
 
 Once registered, `MyModel` is selectable from any training config via
 `model.name: MyModel`.
+
+## Verifying the install (smoke tests)
+
+The `tests/` directory has minimal end-to-end smoke tests that verify a
+fresh install works without needing real data:
+
+```bash
+# 1. Forward-pass test for all 6 OWL models (~30 s on CPU)
+uv run python tests/smoke_forward.py
+
+# 2. Build a synthetic mini-dataset (4 train + 2 val 512x512 images)
+uv run python tests/make_synthetic_dataset.py
+
+# 3. Train OWL-C for one epoch on the synthetic data
+WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+
+# 4. Evaluate the resulting checkpoint
+CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
+WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest \
+    "++test.model.pth_file=$CKPT"
+```
+
+OWL-D variants additionally need DINOv3 weights under `weights/`; if
+present, `tests/smoke_forward.py` exercises all six OWL classes
+(otherwise OWL-D is skipped). See [tests/README.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/tests/README.md).
+
+The smoke configs `configs/train/owlc_smoketest.yaml`,
+`configs/train/owld_s_smoketest.yaml`, and their `configs/test/`
+counterparts are also good templates to copy when you want to point at
+your own real dataset: edit `csv_file`, `root_dir`, `class_def`, and the
+`training_settings.{batch_size,epochs}` fields.

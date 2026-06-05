@@ -588,7 +588,11 @@ class Trainer:
             return torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
 
         elif isinstance(self.auto_lr, dict):
-            return torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, **self.auto_lr)
+            # PyTorch 2.4+ removed the deprecated `verbose` kwarg from
+            # ReduceLROnPlateau. Many existing configs still pass it; drop
+            # it silently so old YAMLs keep working.
+            kwargs = {k: v for k, v in self.auto_lr.items() if k != "verbose"}
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, **kwargs)
 
         elif self.lr_milestones is not None:
             return torch.optim.lr_scheduler.MultiStepLR(self.optimizer, self.lr_milestones)

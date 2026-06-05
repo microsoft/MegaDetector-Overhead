@@ -61,6 +61,18 @@ Expected:
 ['FasterRCNNResNetFPN', 'HerdNet', 'OWLC', 'OWLD_B', 'OWLD_H', 'OWLD_L', 'OWLD_S', 'OWLT', 'SemSegDLA']
 ```
 
+For end-to-end verification (forward pass on every OWL model, plus a
+mini training + eval run on synthetic data), use the bundled smoke
+tests:
+
+```bash
+uv run python tests/smoke_forward.py
+uv run python tests/make_synthetic_dataset.py
+WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+```
+
+See [`tests/README.md`](https://github.com/microsoft/MegaDetector-Overhead/blob/main/tests/README.md).
+
 ## 4. Download DINOv3 weights (one-time, ~6 GB total)
 
 The OWL-D family loads DINOv3 ViT backbones at training time. Weights
