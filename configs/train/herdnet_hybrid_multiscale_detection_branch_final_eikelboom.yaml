@@ -1,0 +1,115 @@
+wandb_project: 'herdnet' # to change
+wandb_entity: 'idchacon' # to change
+wandb_run: 'herdnet_terrestrial_datasets' # to change
+seed: 9292
+device_name: cuda
+
+model:
+  name: OWLT
+  from_torchvision: False
+  load_from: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-09-11/22-09-57/best_model.pth'
+  partial_load: False
+  resume_from: null
+  kwargs:
+    num_layers: 34
+    pretrained_cnn: True
+    head_conv: 64
+    down_ratio: 2
+    # Swin defaults (explicit here for clarity; match our "plug-and-play")
+    swin_num_layers_per_scale: [0, 1, 2, 2, 2, 3]   # L0..L5
+    swin_window_sizes:         [8, 8, 8, 4, 4, 4]
+    swin_num_heads:            [1, 1, 2, 4, 8, 16]
+    drop_path_rate: 0.1
+  freeze: null  # Freeze settings for layers if required, e.g., freeze Swin or CNN layers
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      normalize: false # TODO: Do we want to keep the loss unnormalized?
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+  
+  class_def:
+    1: 'animal'
+  train:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/eikelboom_kenya/eikelboom_train_patches_and_bbox_csv/gt_points.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/eikelboom_kenya/eikelboom_train_patches_and_bbox_csv'
+    sampler: null
+    albu_transforms:
+      VerticalFlip:
+        p: 0.5
+      HorizontalFlip:
+        p: 0.5
+      RandomRotate90:
+        p: 0.5
+      RandomBrightnessContrast:
+        brightness_limit: 0.2
+        contrast_limit: 0.2
+        p: 0.2
+      Blur:
+        blur_limit: 15
+        p: 0.2
+      Normalize: # TODO: How to normalize for all terrestrial datasets?
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: ${train.model.kwargs.down_ratio}
+  validate: # validate on han livestock
+    name: CSVDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/eikelboom_kenya/eikelboom_test_patches_and_bbox_csv/gt_points.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/eikelboom_kenya/eikelboom_test_patches_and_bbox_csv'
+    albu_transforms:
+      Normalize: # TODO: How to normalize for all terrestrial datasets?
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: ${train.model.kwargs.down_ratio}
+        anno_type: ${train.datasets.anno_type}
+training_settings:
+  valid_freq: 1
+  trainer: Trainer
+  print_freq: 100
+  batch_size: 12 # exp1
+  #batch_size: 6
+  optimizer: adam
+  lr: 1.0e-05 # changed compare to train session 1
+  weight_decay: 0.0005
+  auto_lr:
+    mode: max
+    patience: 10
+    threshold: 0.0001
+    threshold_mode: rel
+    cooldown: 0
+    min_lr: 1.0e-07
+    verbose: true
+  warmup_iters: 10
+  vizual_fn: null
+  epochs: 5
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 10 # changed for terrestrial datasets
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 10
+      lmds_kwargs:
+        kernel_size: [3,3]
+        adapt_ts: 0.3
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      overlap: 0 
+      down_ratio: ${train.model.kwargs.down_ratio}
+      up: false
+      reduction: mean

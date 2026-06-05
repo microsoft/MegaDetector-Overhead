@@ -1,0 +1,144 @@
+wandb_project: 'herdnet'  # to change
+wandb_entity: 'idchacon'  # to change
+wandb_run: 'herdnet_terrestrial_datasets'  # to change
+seed: 9292
+device_name: cuda
+
+model:
+  # Updated to the Swin-enabled architecture we built
+  name: OWLT
+  from_torchvision: False
+  #load_from: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-04-25/03-46-42/best_model.pth'
+  load_from: null # resume
+  partial_load: True
+  #resume_from: null
+  resume_from: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-09-11/05-08-00/best_model_until_epoch4.pth'
+  kwargs:
+    num_layers: 34
+    pretrained_cnn: True
+    head_conv: 64
+    down_ratio: 2
+    # Swin defaults (explicit here for clarity; match our "plug-and-play")
+    swin_num_layers_per_scale: [0, 1, 2, 2, 2, 3]   # L0..L5
+    swin_window_sizes:         [8, 8, 8, 4, 4, 4]
+    swin_num_heads:            [1, 1, 2, 4, 8, 16]
+    drop_path_rate: 0.1
+  freeze: null
+
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      normalize: false
+
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+
+  class_def:
+    1: 'animal'
+
+  train:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_training_patches_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_training_patches_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv'
+    sampler: null
+    albu_transforms:
+      VerticalFlip: { p: 0.5 }
+      HorizontalFlip: { p: 0.5 }
+      RandomRotate90: { p: 0.5 }
+      RandomBrightnessContrast:
+        brightness_limit: 0.2
+        contrast_limit: 0.2
+        p: 0.2
+      Blur:
+        blur_limit: 15
+        p: 0.2
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: ${train.model.kwargs.down_ratio}
+
+  validate:
+    name: CSVDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_herdnet_general_han_livestock_quantifying_movement_quantifying_movement_shao_cattle_sheepcounter_and_csv'
+    albu_transforms:
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: ${train.model.kwargs.down_ratio}
+        anno_type: ${train.datasets.anno_type}
+
+training_settings:
+  valid_freq: 1
+  trainer: TwoStageFineTuneTrainer   # ← use the new two-stage trainer
+  print_freq: 100
+  batch_size: 30
+  epochs: 10
+
+  # The new trainer builds its own Adam with param groups; the following optimizer keys are ignored.
+  optimizer: adam   # (kept for pipeline compatibility)
+  lr: 2.0e-05       # (ignored by TwoStageFineTuneTrainer)
+
+  # Stage 1 / Stage 2 configuration (defaults shown explicitly)
+  stage1_epochs: 1
+  warmup_iters: 400
+  stage1_lrs:
+    swin: 1.0e-04
+    head: 2.0e-05
+  stage2_lrs:
+    swin: 5.0e-05
+    head: 2.0e-05
+    dlaup: 2.0e-05
+    backbone: 1.0e-05
+  weight_decay: 5.0e-04
+  grad_clip_max_norm: 1.0
+
+  # Scheduler for Stage 2 (ReduceLROnPlateau). Remove or set to `false` to disable.
+  auto_lr:
+    mode: max
+    patience: 2
+    factor: 0.5
+    cooldown: 1
+    min_lr: 1.0e-06
+    verbose: true
+
+  vizual_fn: null
+
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 5
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 10
+      lmds_kwargs:
+        kernel_size: [3, 3]
+        adapt_ts: 0.3
+
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      overlap: 160
+      down_ratio: ${train.model.kwargs.down_ratio}
+      up: false
+      reduction: mean
+
+  # Optional: arguments forwarded to trainer.start()
+  start_args:
+    checkpoints: best
+    select: ${train.training_settings.evaluator.select_mode}
+    validate_on: ${train.training_settings.evaluator.validate_on}
+    wandb_flag: true

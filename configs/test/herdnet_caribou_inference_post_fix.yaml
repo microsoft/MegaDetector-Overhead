@@ -1,0 +1,68 @@
+# 2026-04-27: full-deployment inference config for the CAH 2022 50-frame survey,
+# using the bug-fixed best-model checkpoint from the 4-way training experiment
+# launched 2026-04-25.
+#
+# Differs from herdnet_loc_branch_caribou_fine_tuning_original_images.yaml in:
+#   - dataset.name: CSVDataset -> FolderDataset
+#       FolderDataset iterates ALL TIF files in root_dir, not just those listed
+#       in csv_file. The 13 zero-GT TIFs (no caribou annotated) participate in
+#       inference; their predictions all count as FP, exactly the specificity
+#       check we want for a deployment claim.
+#       Required upstream change: animaloc/datasets/folder.py extended to
+#       accept .tif/.tiff extensions (added 2026-04-27).
+#   - model.pth_file: points at the checkpoint from the 05-37-38 collision dir
+#       (whichever of aug_sched/aug_lr saved last as 'best'; its actual val F1
+#       on this same test patch set was ~0.88; final inference F1 will tell us
+#       which run owns this checkpoint).
+#   - evaluator.threshold: 20
+#       Match radius. The framework feeds GT and preds at HEATMAP scale (after
+#       DownSample by down_ratio=2), so this value is in HEATMAP PIXELS.
+#       threshold=20 heatmap pixels = 40 image pixels — matches the canonical
+#       paper convention (e.g. tools/test_all_models_by_dataset.py uses
+#       tau_values=[40] in image pixels). Training validation used threshold=5
+#       (= 10 image px), which is consistent with this scaling.
+wandb_project: 'herdnet'
+wandb_entity: 'idchacon'
+wandb_run: 'herdnet_caribou_inference_post_fix'
+device_name: 'cuda'
+
+model:
+  name: 'OWLC'
+  from_torchvision: False
+  pth_file: '/home/v-ichaconsil/azurefiles/outputs/2026-04-25/05-37-38/best_model.pth'
+  kwargs:
+    num_layers: 34
+    pretrained: False
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/CAH_2022/counts/caribou_counts_CAH_2022_EPSG4326_postprocessed.csv'
+  root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Postprocessed_Data_With_Seamlines_Final_CAH_2022'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  threshold: 20
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'

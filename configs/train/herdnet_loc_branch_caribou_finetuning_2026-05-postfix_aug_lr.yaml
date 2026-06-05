@@ -1,0 +1,167 @@
+# 2026-05-05 — Caribou HerdNet fine-tune on the fully post-fix patch dataset.
+#
+# Dataset deltas vs the 2026-04-25 aug_lr run (which produced F1 0.8857 @ ep 7,
+# but on collided weights — see docs/training_runs_2026-04-25/SUMMARY.md):
+#   - PCH train:  32,508 PNGs / 387,520 gt rows  ->  28,089 / 365,051
+#   - CAH val:     7,084 PNGs /  26,224 gt rows  ->   2,570 /  12,373
+#   - Lens-routed: each annotation now belongs to exactly one lens (no
+#     50mm/90mm duplicate rows for the same caribou).
+#   - Empty negatives (4,500) sampled from empty mosaics with pixel-level
+#     disjoint coverage between lenses.
+#   - 2 known patcher bugs accepted as-is for this release: 59 rows in a
+#     drop-tagged mosaic + 146 patches with on-disk black-fraction > 0.5
+#     (see docs/verification_2026-05-05.md). User reviewed visually 2026-05-05.
+#
+# Hyperparameters: copied from the prior aug_lr config that won the 4-variant
+# matrix. Each setting is annotated with the "why" so changes can be
+# attributed precisely if we re-run later.
+#
+# Bootstrap weights: same 2025-04-25 pretrained init the prior matrix used —
+# apples-to-apples with the prior aug_lr run, so any F1 delta is attributable
+# to the cleaner dataset alone.
+
+wandb_project: 'herdnet'
+wandb_entity: 'idchacon'
+wandb_run: 'herdnet_caribou_finetuning_2026-05-postfix_aug_lr'
+
+# Reproducibility — identical seed to the prior aug_lr run for direct
+# comparison. Change only if we explicitly want a different draw.
+seed: 9292
+device_name: cuda
+
+model:
+  name: OWLC
+  from_torchvision: False
+  # Pre-2026 baseline init — same as the prior aug_lr run.
+  load_from: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-04-25/03-46-42/best_model.pth'
+  partial_load: False
+  resume_from: null
+  kwargs:
+    num_layers: 34       # DLA34 backbone — matches HerdNet paper baseline.
+    pretrained: true
+    down_ratio: 2        # Heatmap is 1/2 the patch resolution. Matches stitcher.
+    head_conv: 64
+  freeze: null
+
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      # normalize: false won the prior matrix (aug_lr) over normalize: true
+      # (aug_sched). Keep false.
+      normalize: false
+
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+  class_def:
+    1: 'animal'
+
+  train:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_train_patches_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_train_patches_and_csv'
+    sampler: null
+    # Augmentation pipeline matches the prior aug_lr variant exactly.
+    # MotionBlur instead of Blur — captures aerial-camera motion artifacts
+    # better than a generic Gaussian blur.
+    albu_transforms:
+      VerticalFlip:
+        p: 0.5
+      HorizontalFlip:
+        p: 0.5
+      RandomRotate90:
+        p: 0.5
+      RandomBrightnessContrast:
+        brightness_limit: 0.2
+        contrast_limit: 0.2
+        p: 0.5
+      MotionBlur:
+        blur_limit: 5
+        p: 0.2
+      GaussNoise:
+        var_limit: [10.0, 50.0]
+        p: 0.3
+      HueSaturationValue:
+        hue_shift_limit: 10
+        sat_shift_limit: 20
+        val_shift_limit: 10
+        p: 0.3
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: ${train.model.kwargs.down_ratio}
+
+  validate:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_test_patches_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/Caribou/Caribou_test_patches_and_csv'
+    albu_transforms:
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: ${train.model.kwargs.down_ratio}
+        anno_type: ${train.datasets.anno_type}
+
+training_settings:
+  valid_freq: 1
+  trainer: Trainer
+  print_freq: 100
+  batch_size: 32          # 512x512 RGB on V100 32GB; ~14 GB peak with DLA34.
+  optimizer: adam
+  # 5e-5 was the biggest single-variable win in the prior matrix
+  # (+0.011 F1 over baseline 1e-5; converged at ep 7 vs ep 9-10).
+  lr: 5.0e-05
+  # Weight decay — standard fine-tuning value, unchanged from the prior runs.
+  weight_decay: 0.0005
+  auto_lr:
+    mode: max
+    patience: 10
+    threshold: 0.0001
+    threshold_mode: rel
+    cooldown: 10
+    min_lr: 1.0e-06
+    verbose: true
+  # 1 warmup iter — minimal. The aug_sched run used 100 and gained nothing
+  # vs aug_lr's 1.
+  warmup_iters: 1
+  vizual_fn: null
+  # 20 is the upper bound; in the prior matrix all 4 variants peaked by ep 9-10.
+  # The select_mode=max evaluator keeps the best-F1 checkpoint regardless.
+  epochs: 20
+  # /dev/shm is 64 MiB on this host. Even with set_sharing_strategy("file_system"),
+  # the prior matrix used 0 to avoid bus errors. Keep 0 for this run.
+  num_workers: 0
+  pin_memory: true
+
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 10
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 10
+      lmds_kwargs:
+        kernel_size: [3, 3]
+        adapt_ts: 0.3
+
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      # Validation overlap (160) matches the patcher's overlap. Stitcher
+      # tiles the val image then averages overlapping heatmap regions.
+      overlap: 160
+      down_ratio: ${train.model.kwargs.down_ratio}
+      up: false
+      reduction: mean

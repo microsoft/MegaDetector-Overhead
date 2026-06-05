@@ -1,0 +1,111 @@
+# Smoke-test training config for OWL-D-S (smallest DINOv3 variant).
+# Verifies the DINOv3 + animaloc integration end-to-end: DINOv3 ViT-S/16
+# weights are loaded from weights/dinov3_vits16_pretrain_lvd1689m-08c60483.pth,
+# the DPT decoder is wired on top, and the training loop runs one epoch
+# on the synthetic dataset.
+#
+# Requires: weights/dinov3_vits16_pretrain_lvd1689m-08c60483.pth on disk
+# (download per INSTALL.md or symlink to a local DINOv3 weights dir).
+#
+# Run with:
+#   WANDB_MODE=disabled uv run python tools/train.py train=owld_s_smoketest
+wandb_project: 'owl-smoketest'
+wandb_entity: 'anonymous'
+wandb_run: 'smoketest_owld_s'
+seed: 42
+device_name: cpu
+
+model:
+  name: OWLD_S
+  from_torchvision: False
+  load_from: null
+  partial_load: False
+  resume_from: null
+  kwargs:
+    down_ratio: 2
+    freeze_backbone: true   # frozen DINOv3 keeps the smoke test fast on CPU
+  freeze: null
+
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      normalize: false
+
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+
+  class_def:
+    1: 'animal'
+
+  train:
+    name: FolderDataset
+    csv_file: '/tmp/owl-smoketest/train/gt.csv'
+    root_dir: '/tmp/owl-smoketest/train'
+    sampler: null
+    albu_transforms:
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: ${train.model.kwargs.down_ratio}
+
+  validate:
+    name: CSVDataset
+    csv_file: '/tmp/owl-smoketest/val/gt.csv'
+    root_dir: '/tmp/owl-smoketest/val'
+    albu_transforms:
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: ${train.model.kwargs.down_ratio}
+        anno_type: ${train.datasets.anno_type}
+
+training_settings:
+  valid_freq: 1
+  trainer: Trainer
+  print_freq: 1
+  batch_size: 1
+  num_workers: 0
+  pin_memory: false
+  optimizer: adam
+  lr: 1.0e-04
+  weight_decay: 0.0005
+  auto_lr:
+    mode: max
+    patience: 10
+    threshold: 0.0001
+    threshold_mode: rel
+    cooldown: 10
+    min_lr: 1.0e-05
+  warmup_iters: 1
+  vizual_fn: null
+  epochs: 1
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 10
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 1
+      lmds_kwargs:
+        kernel_size: [3, 3]
+        adapt_ts: 0.3
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      overlap: 160
+      down_ratio: ${train.model.kwargs.down_ratio}
+      up: false
+      reduction: mean

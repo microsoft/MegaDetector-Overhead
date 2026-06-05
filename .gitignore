@@ -1,4 +1,5 @@
 __pycache__/
+*.py[cod]
 *.egg-info/
 dist/
 build/
@@ -8,3 +9,30 @@ Brewfile
 site/
 archive/
 *.code-workspace
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Virtualenvs
+.venv/
+.venv-*/
+venv/
+
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Training/eval artifacts (not tracked)
+logs/
+logs_*/
+outputs/
+wandb/
+weights/
+weights
+
+# Local secrets / credentials
+*.pem
+*.key
+

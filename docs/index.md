@@ -22,22 +22,27 @@ MegaDetector-Overhead is a toolkit from the [Microsoft AI for Good Lab](https://
 
 MegaDetector-Overhead turns aerial survey imagery into structured wildlife detections:
 
-1. **Preprocessing** — tile large orthomosaics and drone frames into model-ready patches with configurable overlap
-2. **Detection** — locate animals, humans, and vehicles in overhead imagery using models fine-tuned for aerial perspectives
-3. **Post-processing** — merge tile-level detections back to full-image coordinates, suppress duplicates, and export results as GeoJSON or CSV
+1. **Preprocessing** — tile large orthomosaics and drone frames into model-ready patches with configurable overlap (`tools/patcher.py`)
+2. **Detection** — locate animals in overhead imagery with the OWL-C / OWL-D / OWL-T model families (DLA + Swin + DINOv3 backbones)
+3. **Post-processing** — merge tile-level peak detections back to full-image coordinates, suppress duplicates, and export results as CSV
 
 ---
 
 ## Get Started
 
-See the [Installation](installation.md) page, then run the demo notebook:
-
 ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
-pip install -r requirements.txt
-jupyter notebook demo/overhead_demo.ipynb
+uv sync
+uv run python -c "import animaloc.models, dinov3; print('OK')"
 ```
+
+Then see:
+
+* [Installation](installation.md) — full install + DINOv3 weights download
+* [Model Zoo](model_zoo.md) — the OWL-C / OWL-D / OWL-T family
+* [Training, Evaluation, and Inference](training.md) — end-to-end workflow
 
 ---
 

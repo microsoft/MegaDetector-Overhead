@@ -1,0 +1,110 @@
+wandb_project: 'herdnet' # to change
+wandb_entity: 'idchacon' # to change
+wandb_run: 'herdnet_terrestrial_subset_datasets' # to change
+seed: 9292
+device_name: cuda
+
+model:
+  name: OWLC
+  from_torchvision: False
+  load_from: '/home/v-ichaconsil/azurefiles/HerdNet/outputs/2025-04-25/03-46-42/best_model.pth'
+  encoder_only: True # Only load the encoder part of the model
+  partial_load: False # The pretrained model should have the same architecture as the one we are training
+  resume_from: null
+  kwargs:
+    num_layers: 34
+    pretrained: true
+    down_ratio: 2 # TODO: Do we want to change this down ratio to 1 now that we are only using loc branch?
+    head_conv: 64
+  freeze: null
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      normalize: false # TODO: Do we want to keep the loss unnormalized?
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+  
+  class_def:
+    1: 'animal'
+  train:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_training_patches_han_livestock_sheepcounter_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_training_patches_han_livestock_sheepcounter_and_csv'
+    sampler: null
+    albu_transforms:
+      VerticalFlip:
+        p: 0.5
+      HorizontalFlip:
+        p: 0.5
+      RandomRotate90:
+        p: 0.5
+      RandomBrightnessContrast:
+        brightness_limit: 0.2
+        contrast_limit: 0.2
+        p: 0.2
+      Blur:
+        blur_limit: 15
+        p: 0.2
+      Normalize: # TODO: How to normalize for all terrestrial datasets?
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: ${train.model.kwargs.down_ratio}
+  validate:
+    name: CSVDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_han_livestock_sheepcounter_and_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/merged_test_datasets_han_livestock_sheepcounter_and_csv'
+    albu_transforms:
+      Normalize: # TODO: How to normalize for all terrestrial datasets?
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: ${train.model.kwargs.down_ratio}
+        anno_type: ${train.datasets.anno_type}
+training_settings:
+  valid_freq: 1
+  trainer: Trainer
+  print_freq: 100
+  batch_size: 32
+  optimizer: adam
+  lr: 1.0e-05 # changed compare to train session 1
+  weight_decay: 0.0005
+  auto_lr:
+    mode: max
+    patience: 10
+    threshold: 0.0001
+    threshold_mode: rel
+    cooldown: 10
+    min_lr: 1.0e-06
+    verbose: true
+  warmup_iters: 1
+  vizual_fn: null
+  epochs: 20
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 10 # changed for terrestrial datasets
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 10
+      lmds_kwargs:
+        kernel_size: [3,3]
+        adapt_ts: 0.3
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      overlap: 160 
+      down_ratio: ${train.model.kwargs.down_ratio}
+      up: false
+      reduction: mean

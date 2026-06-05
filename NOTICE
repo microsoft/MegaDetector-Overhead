@@ -1,0 +1,67 @@
+MegaDetector-Overhead
+Copyright (c) 2024 Microsoft Corporation
+
+Licensed under the MIT License — see LICENSE.txt at the repo root.
+
+================================================================================
+THIRD-PARTY SOFTWARE NOTICES
+================================================================================
+
+This repository vendors source code from two external projects. Each retains
+its original license. The terms below apply only to the files inside the
+named subdirectory; the rest of the repository is governed by the top-level
+MIT LICENSE.txt.
+
+--------------------------------------------------------------------------------
+1. animaloc/  -- vendored from HerdNet
+--------------------------------------------------------------------------------
+
+Upstream:    https://github.com/Alexandre-Delplanque/HerdNet
+Authors:     Alexandre Delplanque, Samuel Foucher, Jérôme Théau,
+             Elsa Bussière, Cédric Vermeulen, Philippe Lejeune
+             (Université de Liège, Gembloux Agro-Bio Tech, Forest Is Life)
+License:     MIT License (compatible with the top-level LICENSE.txt)
+
+Source paper:
+    Delplanque, A., Foucher, S., Théau, J., Bussière, E., Vermeulen, C.,
+    & Lejeune, P. (2023). From crowd to herd counting: How to precisely
+    detect and count African mammals using aerial imagery and deep
+    learning? ISPRS Journal of Photogrammetry and Remote Sensing, 197,
+    167-180. https://doi.org/10.1016/j.isprsjprs.2023.01.025
+
+The following files were renamed for the MegaDetector-Overhead release and
+are described in docs/training.md:
+    animaloc/models/owl_c.py  (was herdnet_detection_branch.py)
+    animaloc/models/owl_d.py  (was herdnet_dinov2.py)
+    animaloc/models/owl_t.py  (was herdnet_hybrid_multiscale_residual.py)
+
+All other animaloc/ files are vendored as-is and retain their original MIT
+copyright headers.
+
+--------------------------------------------------------------------------------
+2. dinov3/  -- vendored from facebookresearch/dinov3
+--------------------------------------------------------------------------------
+
+Upstream:    https://github.com/facebookresearch/dinov3
+Authors:     Meta AI
+License:     DINOv3 License (Meta Platforms, Inc.) -- see dinov3/LICENSE.md
+
+NOTE: The DINOv3 License is NOT the MIT License. It is a custom Meta
+license that permits use, reproduction, and modification for research and
+commercial purposes subject to the terms in dinov3/LICENSE.md, including
+attribution requirements and a redistribution clause.
+
+Anyone redistributing the dinov3/ subdirectory (or works derived from it)
+MUST include a copy of dinov3/LICENSE.md per section 1.b.i of that license.
+
+Pretrained DINOv3 weights are NOT included in this repository (5.8 GB,
+subject to the same DINOv3 License). Download instructions are in
+INSTALL.md.
+
+--------------------------------------------------------------------------------
+Additional Python dependencies
+--------------------------------------------------------------------------------
+
+All transitive Python dependencies are listed in pyproject.toml with their
+pinned versions in uv.lock. Each retains its own upstream license; see the
+respective project pages for details.

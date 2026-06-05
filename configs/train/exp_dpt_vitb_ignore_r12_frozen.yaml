@@ -1,0 +1,115 @@
+wandb_project: 'dinov3-dpt-fidt'
+wandb_entity: 'idchacon'
+wandb_run: 'exp_dpt_vitb_ignore_r12_frozen'
+use_wandb: false
+seed: 42
+device_name: cuda
+
+# Exp B: ViT-B | ReadIgnore | 1/2 scale | frozen backbone
+# CLS readout token is discarded entirely
+
+model:
+  name: OWLD_B
+  from_torchvision: false
+  load_from: null
+  resume_from: null
+  kwargs:
+    pretrained: true
+    head_conv: 64
+    readout_type: ignore
+    freeze_backbone: true
+    down_ratio: 2
+
+losses:
+  FocalLoss:
+    print_name: focal_loss
+    from_torch: false
+    output_idx: 0
+    target_idx: 0
+    lambda_const: 1.0
+    kwargs:
+      reduction: mean
+      normalize: false
+
+datasets:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+  class_def:
+    1: 'animal'
+
+  train:
+    name: FolderDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/herdnet_general/general_dataset/train_patches_and_bbox_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/herdnet_general/general_dataset/train_patches_and_bbox_csv'
+    sampler: null
+    albu_transforms:
+      VerticalFlip:
+        p: 0.5
+      HorizontalFlip:
+        p: 0.5
+      RandomRotate90:
+        p: 0.5
+      RandomBrightnessContrast:
+        brightness_limit: 0.2
+        contrast_limit: 0.2
+        p: 0.2
+      Blur:
+        blur_limit: 15
+        p: 0.2
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      FIDT:
+        add_bg: false
+        down_ratio: 2
+
+  validate:
+    name: CSVDataset
+    csv_file: '/home/v-ichaconsil/azurefiles/Aerial_datasets/herdnet_general/general_dataset/test_patches_and_bbox_csv/gt.csv'
+    root_dir: '/home/v-ichaconsil/azurefiles/Aerial_datasets/herdnet_general/general_dataset/test_patches_and_bbox_csv'
+    albu_transforms:
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    end_transforms:
+      DownSample:
+        down_ratio: 2
+        anno_type: point
+
+training_settings:
+  trainer: Trainer
+  valid_freq: 1
+  print_freq: 100
+  batch_size: 12
+  optimizer: adam
+  lr: 3.0e-4
+  weight_decay: 0.0005
+  warmup_iters: 50
+  vizual_fn: null
+  epochs: 10
+  auto_lr:
+    mode: max
+    patience: 2
+    threshold: 1.0e-4
+    threshold_mode: rel
+    cooldown: 1
+    min_lr: 1.0e-5
+  evaluator:
+    name: HerdNet_Detection_Branch_Evaluator
+    threshold: 30
+    select_mode: max
+    validate_on: f1_score
+    kwargs:
+      print_freq: 10
+      lmds_kwargs:
+        kernel_size: [5, 5]
+        adapt_ts: 0.2
+  stitcher:
+    name: HerdNet_Detection_Branch_Stitcher
+    kwargs:
+      overlap: 160
+      down_ratio: 2
+      up: false
+      reduction: mean

@@ -1,0 +1,57 @@
+# Smoke-test eval config: runs tools/test.py against the synthetic val
+# split, loading the best_model.pth produced by the owlc_smoketest training
+# run. Update `pth_file` to point at the actual checkpoint path printed by
+# tools/train.py.
+#
+# Run with:
+#   WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest
+wandb_project: 'owl-smoketest'
+wandb_entity: 'anonymous'
+wandb_run: 'smoketest_eval'
+device_name: cpu
+
+model:
+  name: OWLC
+  from_torchvision: False
+  # NOTE: relative path; tools/test.py is hydra-driven and runs from a CWD
+  # under outputs/<date>/<time>/. Use an absolute path or a path relative
+  # to that runtime CWD. Easiest: pass on the command line:
+  #   ++test.model.pth_file=/path/to/best_model.pth
+  pth_file: '/home/v-ichaconsil/work/MegaDetector-Overhead/outputs/REPLACE_ME/best_model.pth'
+  kwargs:
+    num_layers: 34
+    pretrained: false
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+
+  class_def:
+    1: 'animal'
+
+  name: CSVDataset
+  csv_file: '/tmp/owl-smoketest/val/gt.csv'
+  root_dir: '/tmp/owl-smoketest/val'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: HerdNet_Detection_Branch_Evaluator
+  threshold: 10
+  kwargs:
+    print_freq: 1
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: HerdNet_Detection_Branch_Stitcher
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: false
+    reduction: mean

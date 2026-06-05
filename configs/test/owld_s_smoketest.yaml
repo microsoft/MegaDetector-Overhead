@@ -1,0 +1,44 @@
+wandb_project: 'owl-smoketest'
+wandb_entity: 'anonymous'
+wandb_run: 'smoketest_owld_s_eval'
+device_name: cpu
+
+model:
+  name: OWLD_S
+  from_torchvision: False
+  pth_file: '/path/to/best_model.pth'  # override via ++test.model.pth_file=<abs>
+  kwargs:
+    down_ratio: 2
+    freeze_backbone: true
+
+dataset:
+  img_size: [512, 512]
+  anno_type: point
+  collate_fn: null
+
+  class_def:
+    1: 'animal'
+
+  name: CSVDataset
+  csv_file: '/tmp/owl-smoketest/val/gt.csv'
+  root_dir: '/tmp/owl-smoketest/val'
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: HerdNet_Detection_Branch_Evaluator
+  threshold: 10
+  kwargs:
+    print_freq: 1
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: HerdNet_Detection_Branch_Stitcher
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: false
+    reduction: mean

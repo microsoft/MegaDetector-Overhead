@@ -8,22 +8,59 @@
 
 MegaDetector-Overhead extends the [MegaDetector](https://github.com/microsoft/MegaDetector) detection framework to drone and UAV survey imagery, handling the unique challenges of overhead perspectives: small targets, variable altitude, and nadir-angle distortion. It is powered by [PyTorch-Wildlife](https://github.com/microsoft/PytorchWildlife) and is part of the [microsoft/Biodiversity](https://github.com/microsoft/Biodiversity) ecosystem.
 
+This repository ships the training, evaluation, and inference stack for the **OWL** model family:
+
+| Model | Backbone | Notes |
+|---|---|---|
+| **OWL-C** | DLA-34 (HerdNet detection branch) | Baseline; fast inference |
+| **OWL-T** | DLA-34 + Swin transformer multiscale residual | Sharper localization on cluttered backgrounds |
+| **OWL-D** (S / B / L / H) | DINOv3 ViT + DPT decoder | Highest quality; foundation-model encoder |
+
+The legacy `HerdNet` multi-class model is also available. See [Model Zoo](docs/model_zoo.md) for the full list.
+
 ---
 
 ## Documentation
 
 Full documentation at **[microsoft.github.io/MegaDetector-Overhead](https://microsoft.github.io/MegaDetector-Overhead/)**
 
+* [Installation](INSTALL.md) — full install + DINOv3 weights download
+* [Training, Evaluation, and Inference](docs/training.md) — end-to-end workflow
+
 ---
 
 ## Quick Start
 
+The environment is managed with [uv](https://github.com/astral-sh/uv). One `uv sync` builds a Python 3.11 venv with all dependencies, the `animaloc` training package, and the vendored DINOv3 encoder.
+
 ```bash
+# 1. Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Clone and sync
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
-pip install -r requirements.txt
-jupyter notebook demo/overhead_demo.ipynb
+uv sync
+
+# 3. Smoke test
+uv run python -c "import animaloc.models, dinov3; print('OK')"
 ```
+
+See [INSTALL.md](INSTALL.md) for DINOv3 weights download and troubleshooting.
+
+---
+
+## Repository Layout
+
+```
+animaloc/    # Training/eval package vendored from HerdNet (MIT)
+dinov3/      # DINOv3 encoder vendored from facebookresearch/dinov3 (DINOv3 License)
+tools/       # train.py, test.py, infer.py, patcher.py
+configs/     # Hydra configs for OWL-C / OWL-D / OWL-T training and eval
+docs/        # MkDocs Material site (build with `uv run --extra docs mkdocs build`)
+```
+
+See [NOTICE](NOTICE) for upstream attribution and third-party licenses.
 
 ---
 
@@ -43,7 +80,7 @@ jupyter notebook demo/overhead_demo.ipynb
 
 ## Citation
 
-If you use MegaDetector-Overhead in your research, please cite:
+If you use MegaDetector-Overhead in your research, please cite the framework, the vendored HerdNet training stack, and the DINOv3 backbone. Full BibTeX in [docs/cite.md](docs/cite.md).
 
 ```bibtex
 @misc{hernandez2024pytorchwildlife,
@@ -52,5 +89,15 @@ If you use MegaDetector-Overhead in your research, please cite:
       year={2024},
       eprint={2405.12930},
       archivePrefix={arXiv},
+}
+
+@article{delplanque2023herdnet,
+    title   = {From crowd to herd counting: How to precisely detect and count African mammals using aerial imagery and deep learning?},
+    journal = {ISPRS Journal of Photogrammetry and Remote Sensing},
+    volume  = {197},
+    pages   = {167-180},
+    year    = {2023},
+    doi     = {10.1016/j.isprsjprs.2023.01.025},
+    author  = {Alexandre Delplanque and Samuel Foucher and Jérôme Théau and Elsa Bussière and Cédric Vermeulen and Philippe Lejeune}
 }
 ```
