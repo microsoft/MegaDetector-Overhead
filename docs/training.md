@@ -99,15 +99,41 @@ and reports F1 / precision / recall / MAE / RMSE per class.
 
 ## Inference on new imagery
 
-`tools/infer.py` runs the original `HerdNet` model end-to-end:
+`tools/infer.py` runs any registered model on a folder of images and
+writes detections to a CSV. The model class, stitcher, evaluator, and
+default constructor kwargs are looked up from
+`animaloc/registry/families.py` based on `--model`.
 
 ```bash
-uv run python tools/infer.py <images_dir> <model.pth>
+# Legacy HerdNet (default, backwards-compatible)
+uv run python tools/infer.py <images_dir> <herdnet.pth>
+
+# OWL-C
+uv run python tools/infer.py <images_dir> <owlc.pth> --model OWLC
+
+# OWL-D-L on CPU, writing results outside the input dir
+uv run python tools/infer.py <images_dir> <owld_l.pth> \
+    --model OWLD_L -device cpu \
+    --output-dir /tmp/owl_l_results
+
+# Override a constructor kwarg
+uv run python tools/infer.py <images_dir> <owlt.pth> --model OWLT \
+    --model-kwarg down_ratio=4
 ```
 
-Outputs land in `<images_dir>/<date>_HerdNet_results/<date>_detections.csv`.
-For OWL-C / OWL-D / OWL-T inference, use `tools/test.py` with the
-corresponding test config.
+Supported `--model` values: `HerdNet`, `OWLC`, `OWLT`, `OWLD_S`,
+`OWLD_B`, `OWLD_L`, `OWLD_H`. Run `uv run python tools/infer.py --help`
+for the full flag set (including `--stitcher`, `--evaluator`,
+`--num-classes`, `--mean`, `--std`, `--down-ratio`, `--lmds-*`,
+`--output-dir`).
+
+Outputs land in `<output_dir>/<date>_detections.csv` with columns
+`images, x, y, labels, scores/dscores, ...`. A `species` column is added
+when the checkpoint stores a `classes` mapping (saved automatically by
+`tools/train.py`).
+
+To register a new model family with `infer.py`, add an entry to
+`animaloc/registry/families.py` rather than editing `tools/infer.py`.
 
 ## Tiling large images
 
@@ -171,6 +197,9 @@ WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
 CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
 WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest \
     "++test.model.pth_file=$CKPT"
+
+# 5. Run inference on the same checkpoint
+./tests/smoke_infer.sh
 ```
 
 OWL-D variants additionally need DINOv3 weights under `weights/`; if
