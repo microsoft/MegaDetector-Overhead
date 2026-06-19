@@ -50,6 +50,11 @@ for the dataset layout (folder structure + per-image CSV with
 `x,y,labels` columns). Configs under `configs/train/` and `configs/test/`
 reference dataset paths under `dataset.root_dir`.
 
+!!! tip "Caribou benchmark dataset"
+    The [Caribou Aerial Survey Dataset](datasets.md) provides ready-to-use
+    train/test splits in this format. Download from Zenodo and point
+    `dataset.root_dir` at the extracted directory.
+
 ## Training
 
 Training is launched via Hydra:

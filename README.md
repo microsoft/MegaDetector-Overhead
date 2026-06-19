@@ -25,6 +25,7 @@ The legacy `HerdNet` multi-class model is also available. See [Model Zoo](docs/m
 Full documentation at **[microsoft.github.io/MegaDetector-Overhead](https://microsoft.github.io/MegaDetector-Overhead/)**
 
 * [Installation](INSTALL.md) — full install + DINOv3 weights download
+* [Datasets](docs/datasets.md) — caribou aerial survey data download (Zenodo)
 * [Training, Evaluation, and Inference](docs/training.md) — end-to-end workflow
 
 ---
@@ -80,24 +81,13 @@ See [NOTICE](NOTICE) for upstream attribution and third-party licenses.
 
 ## Citation
 
-If you use MegaDetector-Overhead in your research, please cite the framework, the vendored HerdNet training stack, and the DINOv3 backbone. Full BibTeX in [docs/cite.md](docs/cite.md).
+If you use MegaDetector-Overhead in your research, please cite:
 
 ```bibtex
-@misc{hernandez2024pytorchwildlife,
-      title={Pytorch-Wildlife: A Collaborative Deep Learning Framework for Conservation},
-      author={Andres Hernandez and Zhongqi Miao and Luisa Vargas and Sara Beery and Rahul Dodhia and Juan Lavista},
-      year={2024},
-      eprint={2405.12930},
-      archivePrefix={arXiv},
-}
-
-@article{delplanque2023herdnet,
-    title   = {From crowd to herd counting: How to precisely detect and count African mammals using aerial imagery and deep learning?},
-    journal = {ISPRS Journal of Photogrammetry and Remote Sensing},
-    volume  = {197},
-    pages   = {167-180},
-    year    = {2023},
-    doi     = {10.1016/j.isprsjprs.2023.01.025},
-    author  = {Alexandre Delplanque and Samuel Foucher and Jérôme Théau and Elsa Bussière and Cédric Vermeulen and Philippe Lejeune}
+@article{chacon2026overhead,
+  title={Overhead Wildlife Locator (OWL): Benchmarking Weakly Supervised Learning for Aerial Wildlife Surveys},
+  author={Chac{\'o}n, Isai Daniel and Miao, Zhongqi and Demuro, Bruno and Robinson, Caleb and Dodhia, Rahul and Otarashvili, Lasha and Holmberg, Jason and Larsen, Kirk and Frederick, Howard and Pamperin, Nathan J and others},
+  journal={arXiv preprint arXiv:2606.13911},
+  year={2026}
 }
 ```

@@ -30,7 +30,9 @@ share the same evaluation/stitching/peak-detection infrastructure.
 The legacy `HerdNet` multi-class model is also registered (`HerdNet`).
 
 !!! note
-    Pretrained weights for the OWL family are not yet released. Watch the
+    Pre-trained **OWL-C weights for caribou** are available on Zenodo — see
+    [Datasets](datasets.md) for download links. General overhead benchmark
+    weights (trained on 5 public datasets) are not yet released — watch the
     [repository](https://github.com/microsoft/MegaDetector-Overhead) for
     updates. DINOv3 backbone weights are downloaded separately from
     Meta — see [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).

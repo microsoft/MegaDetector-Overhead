@@ -73,6 +73,7 @@ nav:
     - Overview: index.md
     - Installation: installation.md
     - Model Zoo: model_zoo.md
+    - Datasets: datasets.md
     - Training & Evaluation: training.md
     - Tags: tags.md
   - Cite Us: cite.md
