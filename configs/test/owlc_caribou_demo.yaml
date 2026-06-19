@@ -1,0 +1,68 @@
+# Portable OWL-C caribou demo eval config.
+#
+# Unlike the author-specific herdnet_caribou_eval_patches_postfix.yaml, this
+# config hardcodes NO machine paths and assumes NO GPU. Paths come from the
+# OWL_DEMO_DATA environment variable, and the device defaults to CPU (override
+# with ++test.device_name=cuda when a CUDA-13-capable GPU is available).
+#
+# It is driven by tools/demo_caribou.sh, which downloads the Zenodo data, builds
+# a subset, exports OWL_DEMO_DATA, and picks the device automatically. To run it
+# by hand:
+#
+#   export OWL_DEMO_DATA=/abs/path/to/demo_data
+#   WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
+#       ++test.dataset.root_dir=$OWL_DEMO_DATA/subset \
+#       ++test.dataset.csv_file=$OWL_DEMO_DATA/subset/gt.csv \
+#       ++test.model.pth_file=$OWL_DEMO_DATA/weights/best_model.pth \
+#       ++test.device_name=cpu
+#
+# The Zenodo release labels these weights "HerdNet (DLA-34)"; in this repo the
+# same DLA-34 detection branch is registered as OWLC, so model.name is 'OWLC'.
+wandb_project: 'owl-caribou-demo'
+wandb_entity: 'anonymous'
+wandb_run: 'owlc_caribou_demo'
+device_name: 'cpu'
+
+model:
+  name: 'OWLC'
+  from_torchvision: False
+  # Override on the CLI (++test.model.pth_file=...) or rely on the env default.
+  pth_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/weights/best_model.pth
+  kwargs:
+    num_layers: 34
+    pretrained: False
+    down_ratio: 2
+    head_conv: 64
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset/gt.csv
+  root_dir: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  # threshold = 10 heatmap pixels = 20 image pixels (point match radius),
+  # mirroring the training-validation convention so numbers are comparable.
+  threshold: 10
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'

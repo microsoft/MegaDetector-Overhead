@@ -32,6 +32,9 @@ wandb/
 weights/
 weights
 
+# Demo data (downloaded from Zenodo at runtime — large, not tracked)
+demo_data/
+
 # Local secrets / credentials
 *.pem
 *.key

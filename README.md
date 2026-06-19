@@ -26,6 +26,7 @@ Full documentation at **[microsoft.github.io/MegaDetector-Overhead](https://micr
 
 * [Installation](INSTALL.md) — full install + DINOv3 weights download
 * [Datasets](docs/datasets.md) — caribou aerial survey data download (Zenodo)
+* [Caribou Demo](docs/demo.md) — download → OWL-C inference (GPU/CPU) → visualize (`tools/demo_caribou.sh`)
 * [Training, Evaluation, and Inference](docs/training.md) — end-to-end workflow
 
 ---

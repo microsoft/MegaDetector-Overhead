@@ -18,6 +18,11 @@ Point-annotated 512×512 px aerial image patches for caribou detection and count
 
 **[➜ Download the dataset from Zenodo](https://zenodo.org/records/20767534)**
 
+!!! tip "Try it in one command"
+    The [Caribou Demo](demo.md) downloads these weights + patches, runs OWL-C
+    inference (GPU or CPU), and visualizes the predictions — see
+    `tools/demo_caribou.sh`.
+
 ---
 
 ### Overview

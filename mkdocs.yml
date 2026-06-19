@@ -72,6 +72,7 @@ nav:
   - MegaDetector-Overhead:
     - Overview: index.md
     - Installation: installation.md
+    - Demo: demo.md
     - Model Zoo: model_zoo.md
     - Datasets: datasets.md
     - Training & Evaluation: training.md
