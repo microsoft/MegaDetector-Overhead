@@ -16,7 +16,7 @@ tags:
 
 Point-annotated 512×512 px aerial image patches for caribou detection and counting from overhead survey imagery. This dataset accompanies the OWL paper and enables reproducible evaluation of point-based object detectors on aerial wildlife imagery.
 
-[:material-download: **Download from Zenodo**](https://zenodo.org/records/20767534){ .md-button .md-button--primary }
+**[➜ Download the dataset from Zenodo](https://zenodo.org/records/20767534)**
 
 ---
 
