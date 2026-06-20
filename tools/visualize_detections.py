@@ -13,7 +13,14 @@ Example
         --images-dir demo_data/subset \
         --output-dir demo_data/viz \
         --gt demo_data/subset/gt.csv \
-        --score-threshold 0.2
+        --score-threshold 0.2 \
+        --pred-scale 2
+
+``tools/test.py`` saves detections in the model's down-sampled coordinate space
+when the stitcher uses ``up=False`` (OWL-C uses ``down_ratio=2``), so pass
+``--pred-scale 2`` to map predictions back onto the original-resolution patch.
+Ground-truth coordinates (from ``gt.csv``) are in original space and are never
+scaled.
 
 Predicted points are drawn in red, ground-truth points (if ``--gt`` is given)
 in green. A small legend/count caption is added to each patch.
@@ -44,13 +51,16 @@ def _score_column(df: pandas.DataFrame) -> str | None:
     return None
 
 
-def _points_for(df: pandas.DataFrame, image: str) -> list:
+def _points_for(df: pandas.DataFrame, image: str, scale: float = 1.0) -> list:
     """Return detection points for one image as a list of (y, x) tuples.
 
-    ``animaloc.vizual.draw_points`` expects points in (y, x) order.
+    ``animaloc.vizual.draw_points`` expects points in (y, x) order. ``scale``
+    multiplies the coordinates, used to map model-space (down-sampled)
+    detections back onto the original-resolution image.
     """
     rows = df[df["images"] == image]
-    return [(float(r.y), float(r.x)) for r in rows.itertuples(index=False)]
+    return [(float(r.y) * scale, float(r.x) * scale)
+            for r in rows.itertuples(index=False)]
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,6 +78,13 @@ def parse_args() -> argparse.Namespace:
                         help="Optional ground-truth CSV (columns images,x,y) to also overlay.")
     parser.add_argument("--score-threshold", type=float, default=0.0,
                         help="Keep only detections with score >= this value. Defaults to 0.0.")
+    parser.add_argument("--pred-scale", type=float, default=1.0,
+                        help="Multiply prediction coordinates by this factor before "
+                             "drawing. tools/test.py saves detections in the model's "
+                             "down-sampled space when the stitcher uses up=False, so "
+                             "pass the model's down_ratio (e.g. 2 for OWL-C) to map "
+                             "predictions back onto the original-resolution patch. "
+                             "Ground-truth coordinates are never scaled. Defaults to 1.0.")
     parser.add_argument("--size", type=int, default=8,
                         help="Diameter (px) of plotted points. Defaults to 8.")
     parser.add_argument("--pred-color", type=str, default="red",
@@ -118,11 +135,11 @@ def main() -> None:
 
         n_gt = 0
         if gt is not None:
-            gt_pts = _points_for(gt, image)
+            gt_pts = _points_for(gt, image)   # GT is in original image space
             n_gt = len(gt_pts)
             canvas = draw_points(canvas, gt_pts, color=args.gt_color, size=args.size)
 
-        pred_pts = _points_for(det, image)
+        pred_pts = _points_for(det, image, scale=args.pred_scale)
         n_pred = len(pred_pts)
         total_pred += n_pred
         canvas = draw_points(canvas, pred_pts, color=args.pred_color, size=args.size)

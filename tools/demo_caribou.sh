@@ -181,6 +181,7 @@ uv run python tools/visualize_detections.py \
   --output-dir "$VIZ_DIR" \
   --gt "$EVAL_DIR/gt.csv" \
   --score-threshold "$SCORE_THRESHOLD" \
+  --pred-scale 2 \
   --all-images
 
 echo
