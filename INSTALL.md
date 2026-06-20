@@ -116,47 +116,44 @@ will auto-download CPython 3.11 if your system Python is older or newer.
 
 ## GPU support
 
-A plain `uv sync` installs the **CPU** build of PyTorch — it works everywhere
-but does not use a GPU. To run on a CUDA GPU, sync the CUDA **extra** that
-matches your NVIDIA driver. Check your driver's CUDA version with `nvidia-smi`
-(top-right "CUDA Version"), then pick the highest `cuXXX` that is **≤** that
-version:
+A plain `uv sync` installs the **CPU** build of PyTorch on every platform — it
+always works (any OS, with or without a GPU) and keeps the lockfile small and
+reproducible. It just won't use a GPU.
 
-| Driver "CUDA Version" (`nvidia-smi`) | Sync command |
-|---|---|
-| ≥ 12.8 | `uv sync --extra cu128` |
-| 12.4 – 12.7 | `uv sync --extra cu124` |
-| 12.1 – 12.3 | `uv sync --extra cu121` |
-| < 12.1 or no GPU | `uv sync` (CPU) |
+To run on a GPU, install a matching accelerator build **after** `uv sync`. uv can
+auto-detect your NVIDIA/AMD/Intel driver and pick the correct wheel in one
+command:
 
 ```bash
-# Example: a host whose driver reports CUDA 12.6
-uv sync --extra cu124
+uv sync                                                    # CPU baseline (reproducible)
+uv pip install torch torchvision --torch-backend=auto      # swap in the GPU build
 
-# Verify CUDA is visible:
+# Verify the GPU is visible:
 uv run python -c "import torch; print('CUDA:', torch.cuda.is_available(), torch.cuda.device_count(), 'devices')"
 ```
 
-The CUDA extras are mutually exclusive — sync only one at a time. They are wired
-to the official PyTorch indexes in `pyproject.toml` (`[[tool.uv.index]]` +
-`[tool.uv.sources]`), so the right wheels are selected automatically.
+`--torch-backend=auto` queries the installed driver and selects the most
+compatible PyTorch index automatically (falling back to CPU if no GPU is found).
+You can also pin a specific backend, e.g. `--torch-backend=cu124` for a CUDA 12.4
+driver, or `--torch-backend=cu128` for CUDA 12.8. Check your driver's CUDA
+version with `nvidia-smi` (top-right "CUDA Version") and choose the highest
+`cuXXX` that is **≤** it.
 
 !!! note
     Older GPUs (e.g. Volta / V100, compute capability 7.0) are supported by the
-    `cu121`/`cu124` wheels but **dropped** from some newer `cu128` builds. If you
+    `cu121`/`cu124` builds but **dropped** from some newer `cu128` builds. If you
     hit `RuntimeError: ... unable to find an engine` on such a GPU, use
-    `--extra cu124`.
+    `--torch-backend=cu124`.
 
-If you prefer not to manage extras, uv can auto-detect the driver for an
-ad-hoc install: `uv pip install --torch-backend auto torch torchvision`
-(see the [PyTorch install matrix](https://pytorch.org/get-started/locally/)
-for ROCm and other backends).
+The GPU build is installed into the same `.venv` and is not pinned in `uv.lock`
+(only the reproducible CPU baseline is). Re-running `uv sync` reverts the venv to
+CPU; re-run the `--torch-backend` command to restore the GPU build.
 
 ## Troubleshooting
 
 * **`torch.cuda.is_available()` is `False` even though `nvidia-smi` shows a GPU**
-  — you installed the CPU build (plain `uv sync`) or a CUDA extra newer than your
-  driver. Re-sync the matching extra from the table above.
+  — you have the default CPU build. Install a GPU build with
+  `uv pip install torch torchvision --torch-backend=auto` (see GPU support above).
 * **`ImportError: libgthread-2.0.so.0`** — opencv-python's GUI bindings
   need glib. We pin `opencv-python-headless` instead. If the headless
   build was accidentally replaced by `opencv-python`, run

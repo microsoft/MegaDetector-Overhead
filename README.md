@@ -43,8 +43,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU build of PyTorch (works everywhere)
-# For a CUDA GPU, sync the extra matching your driver instead, e.g.:
-#   uv sync --extra cu124      # see INSTALL.md → GPU support
+# For a GPU, install a matching build after syncing (uv auto-detects the driver):
+#   uv pip install torch torchvision --torch-backend=auto   # see INSTALL.md → GPU support
 
 # 3. Smoke test
 uv run python -c "import animaloc.models, dinov3; print('OK')"

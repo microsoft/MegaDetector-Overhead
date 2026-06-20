@@ -170,8 +170,8 @@ scaled.
 | Symptom | Cause / Fix |
 |---|---|
 | `wandb: ERROR ...` or a login prompt | The demo sets `WANDB_MODE=disabled`. Running `tools/test.py` by hand requires `WANDB_MODE=disabled` (or `wandb login`). |
-| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Re-sync the CUDA extra matching your driver, e.g. `uv sync --extra cu124` (see [Installation → GPU support](installation.md#gpu-support)). |
-| `RuntimeError: ... unable to find an engine` on an older GPU | Some newer wheels omit kernels for older architectures (e.g. Volta / V100). Use `uv sync --extra cu124`, which includes them. |
+| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Install a GPU build with `uv pip install torch torchvision --torch-backend=auto` (see [Installation → GPU support](installation.md#gpu-support)). |
+| `RuntimeError: ... unable to find an engine` on an older GPU | Some newer wheels omit kernels for older architectures (e.g. Volta / V100). Use `uv pip install torch torchvision --torch-backend=cu124`, which includes them. |
 | Red prediction dots look shifted toward the top-left / "smaller" | Predictions are in the model's down-sampled space — pass `--pred-scale 2` (the OWL-C `down_ratio`) to the visualizer. |
 | `ImportError: libGL.so.1` / `libgthread-2.0.so.0` | Image libs need system glib/GL. The project pins `opencv-python-headless`; re-run `uv sync` if it was replaced. |
 | Checksum mismatch on weights | A corrupted/partial download. Delete `demo_data/weights/` and re-run. |
