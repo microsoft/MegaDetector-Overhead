@@ -161,14 +161,24 @@ CPU; re-run the `--torch-backend` command to restore the GPU build.
 * **`uv sync` resolver failure** — delete `uv.lock`, re-run `uv lock`,
   and re-sync. If the failure persists, open an issue with the resolver
   log.
-* **`uv lock` fails fetching `download-r2.pytorch.org` (TLS / connection
-  errors)** — some corporate or cloud networks block PyTorch's wheel-metadata
-  host, so `uv lock` can't run there. Installing from an existing lock
-  (`uv sync`) still works, because it downloads wheels from the reachable
-  `download.pytorch.org`. The lockfile is regenerated automatically by the
-  **Update uv.lock** GitHub Actions workflow (`.github/workflows/update-lock.yml`)
-  whenever `pyproject.toml` changes; you can also trigger it by hand from the
-  repo's Actions tab. Pull `main` afterwards to get the refreshed `uv.lock`.
+* **`uv lock` or `uv sync` fails fetching `download-r2.pytorch.org` (TLS /
+  connection errors)** — some corporate or cloud networks block PyTorch's CDN
+  (`download-r2.pytorch.org`), which serves both wheel *metadata* (needed by
+  `uv lock`) and the wheels themselves (needed by `uv sync`). On such networks:
+    - `uv lock` can't run locally. The lockfile is regenerated automatically by
+      the **Update uv.lock** GitHub Actions workflow
+      (`.github/workflows/update-lock.yml`) whenever `pyproject.toml` changes;
+      you can also trigger it by hand from the repo's Actions tab, then
+      `git pull` to get the refreshed `uv.lock`.
+    - `uv sync` may fail to download the PyTorch wheels. Ask your network admin
+      to allowlist `download.pytorch.org` and `download-r2.pytorch.org`, run the
+      install from an unrestricted network, or install PyTorch manually (e.g.
+      `uv pip install torch torchvision --torch-backend=auto`, or download the
+      wheels with `curl` from `download.pytorch.org` and
+      `uv pip install ./<wheel>.whl`).
+
+  This only affects networks that block that host — a normal `uv sync` downloads
+  the CPU wheels without issue.
 * **DINOv3 weights file not found at training time** — verify the file
   name under `weights/` matches the `_DEFAULT_WEIGHTS_FILENAME` constant
   on the corresponding `OWLD_*` class in `animaloc/models/owl_d.py`.
