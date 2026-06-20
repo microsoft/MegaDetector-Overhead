@@ -111,17 +111,39 @@ WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
     ++hydra.run.dir="$OWL_DEMO_DATA/run"
 
 # 3. Visualize predictions onto the patches
+#    (predictions are saved in the model's down-sampled space; OWL-C uses
+#     down_ratio=2, so pass --pred-scale 2 to map them onto the patch)
 uv run python tools/visualize_detections.py \
     --detections "$OWL_DEMO_DATA/run/detections.csv" \
     --images-dir "$OWL_DEMO_DATA/test" \
     --output-dir "$OWL_DEMO_DATA/viz" \
     --gt "$OWL_DEMO_DATA/test/gt.csv" \
-    --score-threshold 0.2 --all-images
+    --score-threshold 0.2 --pred-scale 2 --all-images
 ```
 
 The portable demo config lives at `configs/test/owlc_caribou_demo.yaml` — unlike
 the author-specific eval configs, it hardcodes no machine paths (they come from
 `OWL_DEMO_DATA` or `++` overrides) and defaults to CPU.
+
+## Evaluation operating point
+
+The demo config (`configs/test/owlc_caribou_demo.yaml`) evaluates with:
+
+* **Match radius τ = 20 image px.** `evaluator.threshold: 10` is measured on the
+  half-resolution heatmap (`down_ratio: 2`, stitcher `up: False`); ground truth is
+  down-sampled by the same factor, so 10 heatmap px = 20 original px.
+* **Confidence (peak selection) `adapt_ts: 0.3`** (LMDS), with `neg_ts: 0.1` and a
+  `(3, 3)` peak kernel.
+
+This mirrors the per-patch **validation** regime (val F1 ≈ 0.937). The paper's
+headline F1 = 0.965 is reported at a slightly different operating point
+(c\* = 0.20); see [Datasets](datasets.md).
+
+!!! note "Detection coordinate space"
+    With `up: False`, `tools/test.py` writes `detections.csv` in the model's
+    **down-sampled** space (x, y in 0…255 for a 512-px patch at `down_ratio=2`).
+    Ground truth in `gt.csv` is in original 512-px space. The visualizer's
+    `--pred-scale 2` rescales predictions so the two overlay correctly.
 
 ## Visualizing detections on your own runs
 
@@ -133,19 +155,24 @@ uv run python tools/visualize_detections.py \
     --detections path/to/detections.csv \
     --images-dir path/to/patches \
     --output-dir path/to/viz \
+    --pred-scale 2 \
     [--gt path/to/gt.csv] [--score-threshold 0.2] [--all-images]
 ```
 
 Predicted points are drawn in red; if `--gt` is given, ground-truth points are
 drawn in green. Each patch is captioned with its predicted (and GT) point count.
+Pass `--pred-scale` equal to the model's `down_ratio` (2 for OWL-C) so the
+down-sampled predictions land on the full-resolution patch; ground truth is never
+scaled.
 
 ## Troubleshooting
 
 | Symptom | Cause / Fix |
 |---|---|
 | `wandb: ERROR ...` or a login prompt | The demo sets `WANDB_MODE=disabled`. Running `tools/test.py` by hand requires `WANDB_MODE=disabled` (or `wandb login`). |
-| `CUDA: False` even though `nvidia-smi` shows a GPU | The pinned PyTorch is built for **CUDA 13**. If your NVIDIA driver only supports CUDA ≤ 12.x, `torch.cuda.is_available()` is `False` and the demo correctly runs on CPU. Update your driver to a CUDA-13-capable version, or install a PyTorch build matching your local CUDA (see the [PyTorch install matrix](https://pytorch.org/get-started/locally/)). |
-| `RuntimeError: ... unable to find an engine` on an older GPU | PyTorch wheels may omit kernels for older architectures (e.g. Volta / V100). Use a PyTorch build that includes your GPU's compute capability. |
+| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Re-sync the CUDA extra matching your driver, e.g. `uv sync --extra cu124` (see [Installation → GPU support](installation.md#gpu-support)). |
+| `RuntimeError: ... unable to find an engine` on an older GPU | Some newer wheels omit kernels for older architectures (e.g. Volta / V100). Use `uv sync --extra cu124`, which includes them. |
+| Red prediction dots look shifted toward the top-left / "smaller" | Predictions are in the model's down-sampled space — pass `--pred-scale 2` (the OWL-C `down_ratio`) to the visualizer. |
 | `ImportError: libGL.so.1` / `libgthread-2.0.so.0` | Image libs need system glib/GL. The project pins `opencv-python-headless`; re-run `uv sync` if it was replaced. |
 | Checksum mismatch on weights | A corrupted/partial download. Delete `demo_data/weights/` and re-run. |
 

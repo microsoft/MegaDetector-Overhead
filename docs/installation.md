@@ -28,7 +28,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # 2. Clone and sync
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
-uv sync
+uv sync                  # CPU PyTorch; for a GPU see "GPU support" below
 
 # 3. Smoke test
 uv run python -c "import animaloc.models, dinov3; print('OK')"
@@ -51,11 +51,29 @@ uv run python -c "import animaloc.models, dinov3; print('OK')"
 * CUDA-capable GPU recommended for training; CPU works for small
   inference jobs.
 
-## GPU verification
+## GPU support
+
+A plain `uv sync` installs the **CPU** build of PyTorch (works everywhere, no GPU
+assumed). To use a CUDA GPU, sync the extra matching your NVIDIA driver's CUDA
+version (`nvidia-smi` → "CUDA Version") — pick the highest `cuXXX` that is **≤**
+your driver:
+
+| Driver CUDA (`nvidia-smi`) | Command |
+|---|---|
+| ≥ 12.8 | `uv sync --extra cu128` |
+| 12.4 – 12.7 | `uv sync --extra cu124` |
+| 12.1 – 12.3 | `uv sync --extra cu121` |
+| none / older | `uv sync` (CPU) |
 
 ```bash
 uv run python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 ```
+
+The CUDA extras are mutually exclusive — sync only one. Older GPUs (Volta / V100)
+are covered by `cu121`/`cu124` but may be missing from `cu128`; if you see
+`RuntimeError: ... unable to find an engine`, use `--extra cu124`. Full details and
+a `--torch-backend auto` alternative are in
+[INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).
 
 ## Next steps
 

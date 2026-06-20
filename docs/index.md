@@ -34,13 +34,14 @@ MegaDetector-Overhead turns aerial survey imagery into structured wildlife detec
 curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
-uv sync
+uv sync                  # CPU PyTorch; for a GPU use e.g. `uv sync --extra cu124`
 uv run python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 Then see:
 
 * [Installation](installation.md) — full install + DINOv3 weights download
+* [Caribou Demo](demo.md) — download → OWL-C inference (GPU/CPU) → visualize
 * [Model Zoo](model_zoo.md) — the OWL-C / OWL-D / OWL-T family
 * [Training, Evaluation, and Inference](training.md) — end-to-end workflow
 

@@ -79,6 +79,17 @@ docs = [
     "mkdocs-material",
     "pymdown-extensions",
 ]
+# ── Optional GPU builds of PyTorch ──────────────────────────────────────────
+# A plain `uv sync` installs the CPU build of torch/torchvision (works on every
+# machine, no GPU assumed). To use a CUDA GPU, sync ONE matching extra, e.g.:
+#   uv sync --extra cu124        # CUDA 12.4 (driver >= 550); supports Volta+
+#   uv sync --extra cu121        # CUDA 12.1 (driver >= 525)
+#   uv sync --extra cu128        # CUDA 12.8 (driver >= 570; recent GPUs)
+# Pick the highest cuXXX that is <= your driver's CUDA version
+# (`nvidia-smi` → "CUDA Version"). See INSTALL.md.
+cu121 = ["torch", "torchvision"]
+cu124 = ["torch", "torchvision"]
+cu128 = ["torch", "torchvision"]
 
 [project.urls]
 Homepage = "https://github.com/microsoft/MegaDetector-Overhead"
@@ -92,11 +103,54 @@ Issues = "https://github.com/microsoft/MegaDetector-Overhead/issues"
 # ─────────────────────────────────────────────────────────────────────────────
 [tool.uv.sources]
 dinov3 = { path = "dinov3", editable = true }
+# Default to the CPU wheels; each CUDA extra overrides to its own index.
+torch = [
+    { index = "pytorch-cpu", marker = "extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
+    { index = "pytorch-cu121", extra = "cu121" },
+    { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cu128", extra = "cu128" },
+]
+torchvision = [
+    { index = "pytorch-cpu", marker = "extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
+    { index = "pytorch-cu121", extra = "cu121" },
+    { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cu128", extra = "cu128" },
+]
+
+# Explicit PyTorch indexes (only used by packages that opt in via sources above).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [tool.uv]
 # Keep the root project itself editable in the .venv so `import animaloc`
 # picks up local edits without a re-sync.
 package = true
+
+# The CUDA extras are mutually exclusive — only one may be installed at a time.
+conflicts = [
+    [
+        { extra = "cu121" },
+        { extra = "cu124" },
+        { extra = "cu128" },
+    ],
+]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Build system: setuptools is enough — we only ship the animaloc package
