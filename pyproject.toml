@@ -103,15 +103,18 @@ Issues = "https://github.com/microsoft/MegaDetector-Overhead/issues"
 # ─────────────────────────────────────────────────────────────────────────────
 [tool.uv.sources]
 dinov3 = { path = "dinov3", editable = true }
-# Default to the CPU wheels; each CUDA extra overrides to its own index.
+# Default to the CPU wheels on Linux/Windows; macOS uses the PyPI build (already
+# CPU/MPS — there is no separate "+cpu" wheel for macOS). Each CUDA extra
+# overrides to its own index. This makes a plain `uv sync` install the small CPU
+# build everywhere, with no GPU/driver assumptions.
 torch = [
-    { index = "pytorch-cpu", marker = "extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
+    { index = "pytorch-cpu", marker = "sys_platform != 'darwin' and extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
     { index = "pytorch-cu121", extra = "cu121" },
     { index = "pytorch-cu124", extra = "cu124" },
     { index = "pytorch-cu128", extra = "cu128" },
 ]
 torchvision = [
-    { index = "pytorch-cpu", marker = "extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
+    { index = "pytorch-cpu", marker = "sys_platform != 'darwin' and extra != 'cu121' and extra != 'cu124' and extra != 'cu128'" },
     { index = "pytorch-cu121", extra = "cu121" },
     { index = "pytorch-cu124", extra = "cu124" },
     { index = "pytorch-cu128", extra = "cu128" },

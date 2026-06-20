@@ -43,7 +43,17 @@ jobs:
       - name: Verify the default (CPU) resolution installs and imports
         run: |
           uv sync
-          uv run python -c "import torch; print('torch', torch.__version__, '| CUDA build:', torch.version.cuda)"
+          uv run python - <<'PY'
+          import torch
+          v = torch.__version__
+          print("torch", v, "| CUDA build:", torch.version.cuda)
+          # The default `uv sync` must install the CPU build on Linux — not a
+          # CUDA build (which would pull large GPU libs and break on most
+          # drivers). Fail the lock job if that regresses.
+          assert v.endswith("+cpu"), f"expected a +cpu build by default, got {v!r}"
+          assert torch.version.cuda is None, f"expected CPU build, got CUDA {torch.version.cuda}"
+          print("OK: default resolution is the CPU build")
+          PY
 
       - name: Commit and push uv.lock if it changed
         run: |
