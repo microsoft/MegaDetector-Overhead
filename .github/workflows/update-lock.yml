@@ -1,0 +1,58 @@
+name: Update uv.lock
+
+# Regenerates uv.lock on GitHub's runners (which have open internet access to
+# the PyTorch package indexes) and commits it back. This exists because some
+# corporate / cloud networks block PyTorch's wheel-metadata host
+# (download-r2.pytorch.org), which makes `uv lock` fail locally even though
+# `uv sync` from an existing lock works fine there.
+#
+# Runs automatically when the dependency declaration changes, and can also be
+# triggered by hand from the Actions tab ("Run workflow").
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Avoid overlapping runs racing to push the lockfile.
+concurrency:
+  group: update-uv-lock
+  cancel-in-progress: true
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Match the uv version used locally; bump as needed.
+          version: '0.11.15'
+
+      - name: Regenerate the lockfile
+        run: uv lock
+
+      - name: Verify the default (CPU) resolution installs and imports
+        run: |
+          uv sync
+          uv run python -c "import torch; print('torch', torch.__version__, '| CUDA build:', torch.version.cuda)"
+
+      - name: Commit and push uv.lock if it changed
+        run: |
+          if git diff --quiet -- uv.lock; then
+            echo "uv.lock is already up to date — nothing to commit."
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add uv.lock
+            git commit -m "chore: regenerate uv.lock [skip ci]"
+            git push
+          fi

@@ -164,6 +164,14 @@ for ROCm and other backends).
 * **`uv sync` resolver failure** — delete `uv.lock`, re-run `uv lock`,
   and re-sync. If the failure persists, open an issue with the resolver
   log.
+* **`uv lock` fails fetching `download-r2.pytorch.org` (TLS / connection
+  errors)** — some corporate or cloud networks block PyTorch's wheel-metadata
+  host, so `uv lock` can't run there. Installing from an existing lock
+  (`uv sync`) still works, because it downloads wheels from the reachable
+  `download.pytorch.org`. The lockfile is regenerated automatically by the
+  **Update uv.lock** GitHub Actions workflow (`.github/workflows/update-lock.yml`)
+  whenever `pyproject.toml` changes; you can also trigger it by hand from the
+  repo's Actions tab. Pull `main` afterwards to get the refreshed `uv.lock`.
 * **DINOv3 weights file not found at training time** — verify the file
   name under `weights/` matches the `_DEFAULT_WEIGHTS_FILENAME` constant
   on the corresponding `OWLD_*` class in `animaloc/models/owl_d.py`.
