@@ -119,6 +119,18 @@ explicit = true
 # picks up local edits without a re-sync.
 package = true
 
+# Resolve the lockfile for the platforms we support: 64-bit Linux, macOS, and
+# 64-bit Windows. This deliberately excludes niche targets (Linux/Windows on
+# ARM), whose PyTorch CPU wheels are sometimes published under odd local-version
+# tags (e.g. `torchvision 0.27.1+df56172`, win_arm64-only) that otherwise hijack
+# the universal resolution and leave the mainstream platforms without an
+# installable wheel.
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin'",
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Build system: setuptools is enough — we only ship the animaloc package
 # from the repo root. DINOv3 has its own setup.py and is installed as a
