@@ -42,6 +42,9 @@ WANDB_MODE=disabled uv run python tools/train.py train=owld_s_smoketest
 CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
 WANDB_MODE=disabled uv run python tools/test.py test=owld_s_smoketest \
     "++test.model.pth_file=$CKPT"
+
+# 6. Inference smoke (auto-runs steps 2 and 3 if needed)
+./tests/smoke_infer.sh
 ```
 
 Expected runtime on CPU: ~1 min for forward-pass + dataset, ~30 s for
@@ -83,3 +86,18 @@ Training complete | Best f1_score: ... at epoch 1
 The evaluation smoke run writes `metrics_results.csv`,
 `confusion_matrix.csv`, `detections.csv`, and `plots/precision_recall_curve.png`
 under `outputs/<date>/<time>/`.
+
+## Inference smoke (`tests/smoke_infer.sh`)
+
+Runs `tools/infer.py --model OWLC` against the synthetic val/ split,
+using whichever OWL-C checkpoint is most recent under `outputs/`. If no
+checkpoint exists, it runs the OWL-C training smoke first. Verifies
+that:
+
+- The detections CSV is created at `/tmp/owl-smoketest-infer/<date>_detections.csv`
+- The CSV has > 0 rows
+- The CSV header contains `images`, `x`, `y`, `labels` columns
+
+Exit code is 0 on pass, non-zero on any failure. The script is bash, not
+Python — it composes the existing Python entry points and is meant to
+be the one-shot end-to-end "does inference work" check.
