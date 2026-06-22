@@ -29,13 +29,29 @@ share the same evaluation/stitching/peak-detection infrastructure.
 
 The legacy `HerdNet` multi-class model is also registered (`HerdNet`).
 
+## Pretrained weights
+
+**All OWL benchmark checkpoints are now released** on Zenodo
+([record 20802844](https://zenodo.org/records/20802844)) — nothing is pending.
+
+| File | Model | Registry | Notes |
+|---|---|---|---|
+| `Caribou-OWL-C.pth` | OWL-C (caribou) | `OWLC` | Caribou-specific; reproduces the paper headline (F1 = 0.965 on the caribou test split). |
+| `OWL-C.pth` | OWL-C | `OWLC` | General overhead benchmark (trained on public aerial datasets). |
+| `OWL-T.pth` | OWL-T | `OWLT` | General overhead benchmark; Swin multi-scale residual. |
+| `OWL-D.pth` | OWL-D | `OWLD_H` | General overhead benchmark; DINOv3 ViT-H+/16 + DPT decoder. |
+
+The general `OWL-C` / `OWL-T` / `OWL-D` checkpoints are trained on public overhead
+datasets, **not** on caribou — evaluating them on the caribou test set is a
+zero-shot, cross-domain check. See [Datasets](datasets.md) for downloads and the
+[Caribou Demo](demo.md) to run and compare them.
+
 !!! note
-    Pre-trained **OWL-C weights for caribou** are available on Zenodo — see
-    [Datasets](datasets.md) for download links. General overhead benchmark
-    weights (trained on 5 public datasets) are not yet released — watch the
-    [repository](https://github.com/microsoft/MegaDetector-Overhead) for
-    updates. DINOv3 backbone weights are downloaded separately from
-    Meta — see [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).
+    `OWL-D.pth` is a full-model checkpoint that already contains its (frozen)
+    DINOv3 backbone, so it loads with `pretrained=False` and does **not** require
+    the separate Meta DINOv3 backbone download. The separate DINOv3 weights
+    (see [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md))
+    are only needed to **train** an OWL-D model from scratch.
 
 ## Loading a model
 

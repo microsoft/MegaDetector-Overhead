@@ -46,8 +46,8 @@ You also need `curl` and `unzip` on your `PATH` (both are standard on Linux/macO
 
 This will:
 
-1. Download `weights.zip` (216 MB) and `test.zip` (1.2 GB) from Zenodo into
-   `demo_data/` (skipped if already present).
+1. Download `Caribou-OWL-C.pth` (216 MB) and `test.zip` (1.2 GB) from Zenodo
+   into `demo_data/` (skipped if already present).
 2. Verify the weights' SHA-256 against the published checksum.
 3. Build a deterministic **50-patch subset** (40 annotated + 10 background).
 4. Auto-detect the device (GPU if available, else CPU).
@@ -87,19 +87,60 @@ These match the per-patch validation regime reported for the checkpoint
 **identical detections** — only the speed differs (on a Tesla V100 the subset
 runs ~25× faster than CPU).
 
+## Compare all OWL models
+
+`tools/demo_owl_models.sh` runs **all released pretrained models** on the caribou
+data, visualizes each one's predictions, and prints a side-by-side metrics table.
+It downloads the checkpoints from the same [Zenodo record](https://zenodo.org/records/20802844):
+
+```bash
+./tools/demo_owl_models.sh                       # all models, auto device
+./tools/demo_owl_models.sh --models "owl-c owl-t"  # a subset
+./tools/demo_owl_models.sh --device cpu --full     # full test set on CPU
+```
+
+| Key | Checkpoint | Registry | Training data |
+|---|---|---|---|
+| `caribou-owl-c` | `Caribou-OWL-C.pth` | `OWLC` | Caribou (in-domain reference) |
+| `owl-c` | `OWL-C.pth` | `OWLC` | General overhead benchmark |
+| `owl-t` | `OWL-T.pth` | `OWLT` | General overhead benchmark |
+| `owl-d` | `OWL-D.pth` | `OWLD_H` | General overhead benchmark |
+
+Each model writes `demo_data/run_<model>/` (metrics + detections) and
+`demo_data/viz_<model>/` (overlays), plus a combined
+`demo_data/model_comparison.csv`. Example on the default 50-patch subset:
+
+```
+        model device  recall  precision  f1_score
+caribou-owl-c    cpu  0.9782     0.8854    0.9295
+        owl-c    cpu  0.8734     0.8130    0.8421
+        owl-t    cpu  0.8472     0.8661    0.8565
+```
+
+!!! note "Zero-shot vs in-domain"
+    `owl-c` / `owl-t` / `owl-d` are trained on **other** public overhead datasets,
+    not caribou — so on the caribou test set they run **zero-shot** and score below
+    the in-domain `caribou-owl-c` (which hits the F1 = 0.965 headline). That gap is
+    expected and is exactly what this comparison illustrates.
+
+!!! warning "OWL-D needs a GPU"
+    `owl-d` uses a DINOv3 ViT-H+/16 backbone (3.5 GB checkpoint). It is included
+    **only when a CUDA GPU is available** and is skipped automatically on CPU-only
+    machines. It loads entirely from `OWL-D.pth` (no separate Meta DINOv3 download
+    required for inference).
+
 ## Manual walkthrough
 
 If you prefer to run the steps yourself:
 
 ```bash
-# 1. Download + extract
+# 1. Download the caribou test patches + the caribou OWL-C weights
 mkdir -p demo_data/weights demo_data/test
-curl -fL -o demo_data/weights.zip \
-    "https://zenodo.org/api/records/20767534/files/weights.zip/content"
+curl -fL -o demo_data/weights/best_model.pth \
+    "https://zenodo.org/api/records/20802844/files/Caribou-OWL-C.pth/content"
 curl -fL -o demo_data/test.zip \
-    "https://zenodo.org/api/records/20767534/files/test.zip/content"
-unzip -q demo_data/weights.zip -d demo_data/weights
-unzip -q demo_data/test.zip   -d demo_data/test
+    "https://zenodo.org/api/records/20802844/files/test.zip/content"
+unzip -q demo_data/test.zip -d demo_data/test
 
 # 2. Run OWL-C eval (CPU shown; use ++test.device_name=cuda for GPU)
 export OWL_DEMO_DATA="$(pwd)/demo_data"

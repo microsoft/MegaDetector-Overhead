@@ -16,12 +16,13 @@ tags:
 
 Point-annotated 512×512 px aerial image patches for caribou detection and counting from overhead survey imagery. This dataset accompanies the OWL paper and enables reproducible evaluation of point-based object detectors on aerial wildlife imagery.
 
-**[➜ Download the dataset from Zenodo](https://zenodo.org/records/20767534)**
+**[➜ Download the dataset and model weights from Zenodo](https://zenodo.org/records/20802844)**
 
 !!! tip "Try it in one command"
-    The [Caribou Demo](demo.md) downloads these weights + patches, runs OWL-C
-    inference (GPU or CPU), and visualizes the predictions — see
-    `tools/demo_caribou.sh`.
+    The [Caribou Demo](demo.md) downloads the patches + weights, runs OWL-C
+    inference (GPU or CPU), and visualizes the predictions
+    (`tools/demo_caribou.sh`). To run and **compare all four pretrained models**
+    on caribou, use `tools/demo_owl_models.sh`.
 
 ---
 
@@ -42,8 +43,14 @@ This is a **strict cross-herd and cross-temporal generalization benchmark**: mod
 |---|---|
 | `train.zip` | 23,517 training patches (512×512 PNG) + `gt.csv` (273,268 annotations) |
 | `test.zip` | 2,607 test patches (512×512 PNG) + `gt.csv` (12,456 annotations) |
-| `weights.zip` | Pre-trained OWL-C `best_model.pth` (DLA-34, epoch 14, val F1 = 0.937) |
+| `Caribou-OWL-C.pth` | Caribou-specific OWL-C (DLA-34, epoch 14, val F1 = 0.937); reproduces the F1 = 0.965 headline below |
+| `OWL-C.pth` | OWL-C general overhead-benchmark model (DLA-34 detection branch) |
+| `OWL-T.pth` | OWL-T general overhead-benchmark model (DLA-34 + Swin multi-scale residual) |
+| `OWL-D.pth` | OWL-D general overhead-benchmark model (DINOv3 ViT-H+/16 + DPT decoder) |
 | `README.md` | Full dataset documentation, annotation format, and benchmark results |
+
+The `OWL-C` / `OWL-T` / `OWL-D` checkpoints are trained on public overhead
+datasets, **not** caribou; see the [Model Zoo](model_zoo.md) for details.
 
 ---
 
@@ -63,7 +70,7 @@ This format is directly compatible with the `animaloc` training package used in 
 
 ### Benchmark results
 
-The pre-trained OWL-C weights included in the Zenodo release reproduce the paper headline on the test split:
+The pre-trained **`Caribou-OWL-C.pth`** weights reproduce the paper headline on the test split:
 
 | Metric | Value |
 |---|---|
@@ -72,7 +79,13 @@ The pre-trained OWL-C weights included in the Zenodo release reproduce the paper
 | Recall | 0.955 |
 
 !!! note
-    These are caribou-specific OWL-C weights. Pre-trained weights for the general overhead benchmark (5 public datasets) are not yet released — watch the [repository](https://github.com/microsoft/MegaDetector-Overhead) for updates.
+    **All OWL pretrained checkpoints are now released** — the caribou-specific
+    `Caribou-OWL-C.pth` plus the three general overhead-benchmark models
+    (`OWL-C.pth`, `OWL-T.pth`, `OWL-D.pth`). The general models are trained on
+    public overhead datasets, not caribou, so evaluating them on the caribou test
+    set is a zero-shot, cross-domain check (expect lower numbers than the
+    in-domain `Caribou-OWL-C`). The [Caribou Demo](demo.md) runs and compares all
+    four.
 
 ---
 

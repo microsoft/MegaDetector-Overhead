@@ -17,13 +17,18 @@ This repository ships the training, evaluation, and inference stack for the **OW
 
 The legacy `HerdNet` multi-class model is also available. See [Model Zoo](docs/model_zoo.md) for the full list.
 
+**Pretrained weights:** all OWL benchmark checkpoints (the caribou-specific
+`Caribou-OWL-C` plus the general `OWL-C` / `OWL-T` / `OWL-D` models) are released
+on [Zenodo](https://zenodo.org/records/20802844). See [Datasets](docs/datasets.md).
+
 ---
 
 ## Documentation
 
 * [Installation](INSTALL.md) — full install + DINOv3 weights download
-* [Datasets](docs/datasets.md) — caribou aerial survey data download (Zenodo)
-* [Caribou Demo](docs/demo.md) — download → OWL-C inference (GPU/CPU) → visualize (`tools/demo_caribou.sh`)
+* [Datasets](docs/datasets.md) — caribou data + pretrained model weights (Zenodo)
+* [Model Zoo](docs/model_zoo.md) — the OWL-C / OWL-D / OWL-T family + pretrained checkpoints
+* [Caribou Demo](docs/demo.md) — download → OWL inference (GPU/CPU) → visualize; run & compare all models (`tools/demo_caribou.sh`, `tools/demo_owl_models.sh`)
 * [Training, Evaluation, and Inference](docs/training.md) — end-to-end workflow
 
 ---
