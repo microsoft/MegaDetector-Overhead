@@ -1,12 +1,11 @@
 # MegaDetector-Overhead
 
-[![Docs](https://img.shields.io/badge/docs-microsoft.github.io-blue)](https://microsoft.github.io/MegaDetector-Overhead/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 [![PyTorch-Wildlife](https://img.shields.io/badge/PyTorch--Wildlife-ecosystem-green)](https://github.com/microsoft/Biodiversity)
 
 **Open-source AI for detecting wildlife in overhead and aerial imagery.**
 
-MegaDetector-Overhead extends the [MegaDetector](https://github.com/microsoft/MegaDetector) detection framework to drone and UAV survey imagery, handling the unique challenges of overhead perspectives: small targets, variable altitude, and nadir-angle distortion. It is powered by [PyTorch-Wildlife](https://github.com/microsoft/PytorchWildlife) and is part of the [microsoft/Biodiversity](https://github.com/microsoft/Biodiversity) ecosystem.
+MegaDetector-Overhead extends the [MegaDetector](https://github.com/microsoft/MegaDetector) detection framework to drone and UAV survey imagery, handling the unique challenges of overhead perspectives: small targets, variable altitude, and nadir-angle distortion. It is powered by [PyTorch-Wildlife](https://github.com/microsoft/Biodiversity) and is part of the [microsoft/Biodiversity](https://github.com/microsoft/Biodiversity) ecosystem.
 
 This repository ships the training, evaluation, and inference stack for the **OWL** model family:
 
@@ -21,8 +20,6 @@ The legacy `HerdNet` multi-class model is also available. See [Model Zoo](docs/m
 ---
 
 ## Documentation
-
-Full documentation at **[microsoft.github.io/MegaDetector-Overhead](https://microsoft.github.io/MegaDetector-Overhead/)**
 
 * [Installation](INSTALL.md) — full install + DINOv3 weights download
 * [Datasets](docs/datasets.md) — caribou aerial survey data download (Zenodo)
@@ -74,7 +71,6 @@ See [NOTICE](NOTICE) for upstream attribution and third-party licenses.
 |---|---|
 | [microsoft/Biodiversity](https://github.com/microsoft/Biodiversity) | Umbrella hub — PyTorch-Wildlife, MegaDetector, ecosystem overview |
 | [microsoft/MegaDetector](https://github.com/microsoft/MegaDetector) | Animal, human, and vehicle detection for camera-trap images |
-| [microsoft/PytorchWildlife](https://github.com/microsoft/PytorchWildlife) | The collaborative deep learning framework for wildlife monitoring |
 | [microsoft/MegaDetector-Overhead](https://github.com/microsoft/MegaDetector-Overhead) | **This repo** — wildlife detection in aerial and drone imagery |
 | [microsoft/MegaDetector-Acoustic](https://github.com/microsoft/MegaDetector-Acoustic) | Bioacoustic AI for audio-based wildlife monitoring |
 | [microsoft/MegaDetector-Sonar](https://github.com/microsoft/MegaDetector-Sonar) | Sonar-based wildlife detection for aquatic monitoring |
