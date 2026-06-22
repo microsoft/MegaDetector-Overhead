@@ -32,6 +32,7 @@ MegaDetector-Overhead turns aerial survey imagery into structured wildlife detec
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"   # make uv available in the current shell
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU PyTorch; for a GPU, see `uv pip install ... --torch-backend=auto`
