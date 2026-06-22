@@ -24,6 +24,8 @@ at the repo root.
 ```bash
 # 1. Install uv (one-time)
 curl -LsSf https://astral.sh/uv/install.sh | sh
+# If `uv` isn't found afterwards, open a new shell or add it to PATH:
+#   export PATH="$HOME/.local/bin:$PATH"
 
 # 2. Clone and sync
 git clone https://github.com/microsoft/MegaDetector-Overhead

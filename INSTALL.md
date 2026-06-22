@@ -14,6 +14,18 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 (See the [uv docs](https://github.com/astral-sh/uv) for Windows / macOS
 installers.)
 
+!!! note "If `uv` is not found after installing"
+    The installer places `uv` in `~/.local/bin` and adds it to your `PATH` — but
+    that change only applies to **new** shells. If `uv sync` reports
+    `uv: command not found` in the same terminal, either open a new shell or run:
+
+    ```bash
+    source "$HOME/.local/bin/env"          # if the installer created it
+    # ...or add the directory to PATH directly:
+    export PATH="$HOME/.local/bin:$PATH"   # for the current shell
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc   # persist it
+    ```
+
 ## 2. Clone and sync the environment
 
 ```bash
