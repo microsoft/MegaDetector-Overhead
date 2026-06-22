@@ -1,0 +1,62 @@
+# Portable OWL-D caribou demo eval config (mirrors owlc_caribou_demo.yaml).
+#
+# Hardcodes NO machine paths. Paths come from the OWL_DEMO_DATA environment
+# variable. OWL-D is heavy (DINOv3 ViT-H+/16, ~840M-param backbone) — run it on a
+# CUDA GPU (++test.device_name=cuda); CPU works but is slow. Driven by
+# tools/demo_owl_models.sh, or by hand:
+#
+#   export OWL_DEMO_DATA=/abs/path/to/demo_data
+#   WANDB_MODE=disabled uv run python tools/test.py test=owld_caribou_demo \
+#       ++test.model.pth_file=$OWL_DEMO_DATA/models/OWL-D.pth \
+#       ++test.dataset.root_dir=$OWL_DEMO_DATA/subset \
+#       ++test.dataset.csv_file=$OWL_DEMO_DATA/subset/gt.csv \
+#       ++test.device_name=cuda
+#
+# pretrained=False: the OWL-D.pth checkpoint already contains the (frozen) DINOv3
+# backbone, so the separate Meta DINOv3 backbone download is NOT needed here.
+wandb_project: 'owl-caribou-demo'
+wandb_entity: 'anonymous'
+wandb_run: 'owld_caribou_demo'
+device_name: 'cpu'
+
+model:
+  name: 'OWLD_H'
+  from_torchvision: False
+  pth_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/models/OWL-D.pth
+  kwargs:
+    pretrained: False
+    head_conv: 64
+    readout_type: 'ignore'
+    freeze_backbone: True
+    down_ratio: 2
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset/gt.csv
+  root_dir: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  threshold: 10
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'

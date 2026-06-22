@@ -26,7 +26,7 @@
 # they already exist.
 set -euo pipefail
 
-ZENODO="https://zenodo.org/api/records/20767534/files"
+ZENODO="https://zenodo.org/api/records/20802844/files"
 WEIGHTS_SHA256="8206535afd52e1990fd5e4248e92968dfe05196dd7f44693a2f854a027512bc5"
 
 DEVICE="auto"
@@ -57,6 +57,9 @@ if ! command -v uv >/dev/null 2>&1; then
   echo "ERROR: 'uv' not found. Install it first (see INSTALL.md)." >&2
   exit 1
 fi
+# UV_RUN lets restricted-network users force "uv run --no-sync" (skip the implicit
+# re-sync) when PyTorch's wheel host is blocked but the .venv is already built.
+UV_RUN="${UV_RUN:-uv run}"
 
 mkdir -p "$DATA_DIR"
 DATA_DIR="$(cd "$DATA_DIR" && pwd)"   # absolute
@@ -70,14 +73,12 @@ echo "==> Repo:      $REPO_ROOT"
 echo "==> Data dir:  $DATA_DIR"
 
 # ---------------------------------------------------------------------------
-# 1. Download + verify weights
+# 1. Download + verify the caribou OWL-C weights
 # ---------------------------------------------------------------------------
 mkdir -p "$WEIGHTS_DIR"
 if [[ ! -f "$WEIGHTS_DIR/best_model.pth" ]]; then
-  echo "==> Downloading weights.zip (216 MB) ..."
-  curl -fL --retry 3 -o "$DATA_DIR/weights.zip" "$ZENODO/weights.zip/content"
-  unzip -o -q "$DATA_DIR/weights.zip" -d "$WEIGHTS_DIR"
-  rm -f "$DATA_DIR/weights.zip"
+  echo "==> Downloading Caribou-OWL-C.pth (216 MB) ..."
+  curl -fL --retry 3 -o "$WEIGHTS_DIR/best_model.pth" "$ZENODO/Caribou-OWL-C.pth/content"
 fi
 echo "==> Verifying weights SHA-256 ..."
 GOT_SHA="$(sha256sum "$WEIGHTS_DIR/best_model.pth" | awk '{print $1}')"
@@ -111,7 +112,7 @@ if [[ "$FULL" -eq 1 ]]; then
 else
   echo "==> Building ${SUBSET_SIZE}-patch subset ..."
   SUBSET_SIZE="$SUBSET_SIZE" TEST_DIR="$TEST_DIR" SUBSET_DIR="$SUBSET_DIR" \
-    uv run python - <<'PY'
+    $UV_RUN python - <<'PY'
 import os, random, shutil
 import pandas as pd
 
@@ -147,11 +148,11 @@ fi
 # 4. Resolve device (auto-detect → cuda if available, else cpu)
 # ---------------------------------------------------------------------------
 if [[ "$DEVICE" == "auto" ]]; then
-  DEVICE="$(uv run python -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
+  DEVICE="$($UV_RUN python -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
 fi
 echo "==> Device: $DEVICE"
 if [[ "$DEVICE" == "cuda" ]]; then
-  uv run python -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
+  $UV_RUN python -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
@@ -160,7 +161,7 @@ fi
 rm -rf "$RUN_DIR"
 echo "==> Running OWL-C inference ..."
 export OWL_DEMO_DATA="$DATA_DIR"
-WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
+WANDB_MODE=disabled $UV_RUN python tools/test.py test=owlc_caribou_demo \
   ++test.device_name="$DEVICE" \
   ++test.model.pth_file="$WEIGHTS_DIR/best_model.pth" \
   ++test.dataset.root_dir="$EVAL_DIR" \
@@ -175,7 +176,7 @@ echo "==> Detections:  $DET_CSV"
 # 6. Visualize predictions on the patches
 # ---------------------------------------------------------------------------
 echo "==> Rendering prediction overlays ..."
-uv run python tools/visualize_detections.py \
+$UV_RUN python tools/visualize_detections.py \
   --detections "$DET_CSV" \
   --images-dir "$EVAL_DIR" \
   --output-dir "$VIZ_DIR" \

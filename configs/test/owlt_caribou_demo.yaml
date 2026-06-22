@@ -1,0 +1,64 @@
+# Portable OWL-T caribou demo eval config (mirrors owlc_caribou_demo.yaml).
+#
+# Hardcodes NO machine paths and assumes NO GPU. Paths come from the
+# OWL_DEMO_DATA environment variable; device defaults to CPU (override with
+# ++test.device_name=cuda). Driven by tools/demo_owl_models.sh, or by hand:
+#
+#   export OWL_DEMO_DATA=/abs/path/to/demo_data
+#   WANDB_MODE=disabled uv run python tools/test.py test=owlt_caribou_demo \
+#       ++test.model.pth_file=$OWL_DEMO_DATA/models/OWL-T.pth \
+#       ++test.dataset.root_dir=$OWL_DEMO_DATA/subset \
+#       ++test.dataset.csv_file=$OWL_DEMO_DATA/subset/gt.csv \
+#       ++test.device_name=cpu
+#
+# OWL-T = HerdNet detection branch (DLA-34) + Swin multi-scale residual,
+# registered as OWLT. pretrained_cnn=False because the full checkpoint is loaded.
+wandb_project: 'owl-caribou-demo'
+wandb_entity: 'anonymous'
+wandb_run: 'owlt_caribou_demo'
+device_name: 'cpu'
+
+model:
+  name: 'OWLT'
+  from_torchvision: False
+  pth_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/models/OWL-T.pth
+  kwargs:
+    num_layers: 34
+    pretrained_cnn: False
+    head_conv: 64
+    down_ratio: 2
+    swin_num_layers_per_scale: [0, 1, 2, 2, 2, 3]
+    swin_window_sizes:         [8, 8, 8, 4, 4, 4]
+    swin_num_heads:            [1, 1, 2, 4, 8, 16]
+    drop_path_rate: 0.0
+
+dataset:
+  img_size: [512, 512]
+  anno_type: 'point'
+  collate_fn: null
+
+  class_def:
+      1: 'animal'
+
+  name: 'FolderDataset'
+  csv_file: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset/gt.csv
+  root_dir: ${oc.env:OWL_DEMO_DATA,/REPLACE_ME}/subset
+
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+evaluator:
+  name: 'HerdNet_Detection_Branch_Evaluator'
+  threshold: 10
+  kwargs:
+    lmds_kwargs:
+      kernel_size: [3, 3]
+      adapt_ts: 0.3
+
+stitcher:
+  name: 'HerdNet_Detection_Branch_Stitcher'
+  kwargs:
+    overlap: 160
+    down_ratio: ${test.model.kwargs.down_ratio}
+    up: False
+    reduction: 'mean'
