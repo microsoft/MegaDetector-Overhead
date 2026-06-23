@@ -56,21 +56,25 @@ uv run python -c "import animaloc.models, dinov3; print('OK')"
 ## GPU support
 
 A plain `uv sync` installs the **CPU** build of PyTorch on every platform (works
-everywhere, no GPU assumed). To use a GPU, install a matching build **after**
-syncing — uv auto-detects your driver and picks the right wheel:
+everywhere, no GPU assumed). To use a GPU, sync the **dependency-group** matching
+your NVIDIA driver — this installs a CUDA build that is pinned in `uv.lock`
+(reproducible):
 
 ```bash
-uv sync                                                  # CPU baseline
-uv pip install torch torchvision --torch-backend=auto    # swap in the GPU build
-uv run python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+# Pick ONE group matching your driver's CUDA version (`nvidia-smi`):
+uv sync --no-default-groups --group cu121   # CUDA 12.1+ (incl. Volta / V100)
+uv sync --no-default-groups --group cu124   # CUDA 12.4+
+uv sync --no-default-groups --group cu128   # CUDA 12.8+ (recent GPUs)
+
+uv run --no-default-groups --group cu121 \
+    python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 ```
 
-`--torch-backend=auto` queries the installed driver and selects the most
-compatible PyTorch build (falling back to CPU if no GPU is found). You can also
-pin one explicitly, e.g. `--torch-backend=cu124`. Older GPUs (Volta / V100) are
-covered by `cu121`/`cu124` but may be missing from `cu128`; if you see
-`RuntimeError: ... unable to find an engine`, use `--torch-backend=cu124`. Full
-details are in
+Pick the highest `cuXXX` that is **≤** your driver's CUDA version. **Volta GPUs
+(Tesla V100) require `cu121`** — `cu124`/`cu128` drop Volta kernels and raise
+`RuntimeError: ... unable to find an engine`. Because `cpu` is the default group,
+a bare `uv sync`/`uv run` returns to CPU, so pass the group on every GPU command
+(or `uv run --no-sync` after syncing). Full details are in
 [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).
 
 ## Next steps

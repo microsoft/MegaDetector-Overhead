@@ -35,7 +35,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"   # make uv available in the current shell
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
-uv sync                  # CPU PyTorch; for a GPU, see `uv pip install ... --torch-backend=auto`
+uv sync                  # CPU PyTorch; for a GPU see `uv sync --no-default-groups --group cuXXX`
 uv run python -c "import animaloc.models, dinov3; print('OK')"
 ```
 

@@ -57,8 +57,10 @@ if ! command -v uv >/dev/null 2>&1; then
   echo "ERROR: 'uv' not found. Install it first (see INSTALL.md)." >&2
   exit 1
 fi
-# UV_RUN lets restricted-network users force "uv run --no-sync" (skip the implicit
-# re-sync) when PyTorch's wheel host is blocked but the .venv is already built.
+# UV_RUN overrides how Python is launched. For GPU, sync a CUDA group and set
+#   export UV_RUN="uv run --no-default-groups --group cu121"   # cu121 for Volta/V100
+# so uv keeps the GPU build. On networks that block PyTorch's wheel host, use
+# "uv run --no-sync" to reuse the existing .venv without a re-sync.
 UV_RUN="${UV_RUN:-uv run}"
 
 mkdir -p "$DATA_DIR"

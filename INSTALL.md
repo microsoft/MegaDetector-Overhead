@@ -129,43 +129,55 @@ will auto-download CPython 3.11 if your system Python is older or newer.
 ## GPU support
 
 A plain `uv sync` installs the **CPU** build of PyTorch on every platform — it
-always works (any OS, with or without a GPU) and keeps the lockfile small and
-reproducible. It just won't use a GPU.
+always works (any OS, with or without a GPU) and keeps the environment small and
+fully reproducible. It just won't use a GPU.
 
-To run on a GPU, install a matching accelerator build **after** `uv sync`. uv can
-auto-detect your NVIDIA/AMD/Intel driver and pick the correct wheel in one
-command:
+To run on a GPU, sync the **dependency-group** that matches your NVIDIA driver.
+This installs a CUDA build of `torch`/`torchvision` that is **pinned in
+`uv.lock`** (so it's reproducible, unlike an ad-hoc `pip install`):
 
 ```bash
-uv sync                                                    # CPU baseline (reproducible)
-uv pip install torch torchvision --torch-backend=auto      # swap in the GPU build
+# Pick ONE group that matches your driver's CUDA version (`nvidia-smi`):
+uv sync --no-default-groups --group cu121   # CUDA 12.1+ driver (incl. Volta / V100)
+uv sync --no-default-groups --group cu124   # CUDA 12.4+ driver
+uv sync --no-default-groups --group cu128   # CUDA 12.8+ driver (recent GPUs)
 
-# Verify the GPU is visible:
-uv run python -c "import torch; print('CUDA:', torch.cuda.is_available(), torch.cuda.device_count(), 'devices')"
+# Verify the GPU is visible (pass the same group so uv doesn't re-sync to CPU):
+uv run --no-default-groups --group cu121 \
+    python -c "import torch; print('CUDA:', torch.cuda.is_available(), torch.cuda.device_count(), 'devices')"
 ```
 
-`--torch-backend=auto` queries the installed driver and selects the most
-compatible PyTorch index automatically (falling back to CPU if no GPU is found).
-You can also pin a specific backend, e.g. `--torch-backend=cu124` for a CUDA 12.4
-driver, or `--torch-backend=cu128` for CUDA 12.8. Check your driver's CUDA
-version with `nvidia-smi` (top-right "CUDA Version") and choose the highest
-`cuXXX` that is **≤** it.
+Choose the **highest `cuXXX` that is ≤** your driver's CUDA version (`nvidia-smi`,
+top-right "CUDA Version").
 
-!!! note
-    Older GPUs (e.g. Volta / V100, compute capability 7.0) are supported by the
-    `cu121`/`cu124` builds but **dropped** from some newer `cu128` builds. If you
-    hit `RuntimeError: ... unable to find an engine` on such a GPU, use
-    `--torch-backend=cu124`.
+!!! warning "Volta GPUs (Tesla V100) need cu121"
+    Compute-capability 7.0 (Volta / V100) kernels were **dropped** from the
+    `cu124` / `cu128` wheels. On a V100 those builds raise
+    `RuntimeError: ... unable to find an engine`. Use **`--group cu121`**.
 
-The GPU build is installed into the same `.venv` and is not pinned in `uv.lock`
-(only the reproducible CPU baseline is). Re-running `uv sync` reverts the venv to
-CPU; re-run the `--torch-backend` command to restore the GPU build.
+!!! note "Running on the GPU without reverting to CPU"
+    `cpu` is the default group, so a bare `uv sync` or `uv run` returns the
+    environment to the CPU build. When working on the GPU, **pass the group on
+    every command** — `uv run --no-default-groups --group cu121 python ...` — or
+    use `uv run --no-sync` after syncing the group. The bundled demo scripts honor
+    a `UV_RUN` override, e.g.:
+
+    ```bash
+    export UV_RUN="uv run --no-default-groups --group cu121"
+    ./tools/demo_owl_models.sh --device cuda
+    ```
+
+The CUDA groups are mutually exclusive — sync only one at a time.
 
 ## Troubleshooting
 
 * **`torch.cuda.is_available()` is `False` even though `nvidia-smi` shows a GPU**
-  — you have the default CPU build. Install a GPU build with
-  `uv pip install torch torchvision --torch-backend=auto` (see GPU support above).
+  — you have the default CPU build, or a bare `uv sync`/`uv run` reverted it.
+  Sync the matching CUDA group (`uv sync --no-default-groups --group cu121`) and
+  run with the same group flags (see GPU support above).
+* **`RuntimeError: ... unable to find an engine` on an older GPU** — the wheel
+  lacks kernels for your GPU's compute capability (e.g. Volta / V100 on
+  `cu124`/`cu128`). Use `--group cu121`.
 * **`ImportError: libgthread-2.0.so.0`** — opencv-python's GUI bindings
   need glib. We pin `opencv-python-headless` instead. If the headless
   build was accidentally replaced by `opencv-python`, run

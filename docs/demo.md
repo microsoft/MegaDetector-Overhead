@@ -94,8 +94,15 @@ data, visualizes each one's predictions, and prints a side-by-side metrics table
 It downloads the checkpoints from the same [Zenodo record](https://zenodo.org/records/20802844):
 
 ```bash
-./tools/demo_owl_models.sh                       # all models, auto device
-./tools/demo_owl_models.sh --models "owl-c owl-t"  # a subset
+# CPU (default):
+./tools/demo_owl_models.sh --models "caribou-owl-c owl-c owl-t"
+
+# GPU (sync the matching CUDA group first, then point UV_RUN at it so uv
+# doesn't revert to CPU — see Installation → GPU support):
+uv sync --no-default-groups --group cu121          # cu121 for Volta / V100
+export UV_RUN="uv run --no-default-groups --group cu121"
+./tools/demo_owl_models.sh --device cuda           # includes owl-d on GPU
+
 ./tools/demo_owl_models.sh --device cpu --full     # full test set on CPU
 ```
 
@@ -108,14 +115,19 @@ It downloads the checkpoints from the same [Zenodo record](https://zenodo.org/re
 
 Each model writes `demo_data/run_<model>/` (metrics + detections) and
 `demo_data/viz_<model>/` (overlays), plus a combined
-`demo_data/model_comparison.csv`. Example on the default 50-patch subset:
+`demo_data/model_comparison.csv`. Example on the default 50-patch subset (GPU):
 
 ```
         model device  recall  precision  f1_score
-caribou-owl-c    cpu  0.9782     0.8854    0.9295
-        owl-c    cpu  0.8734     0.8130    0.8421
-        owl-t    cpu  0.8472     0.8661    0.8565
+caribou-owl-c   cuda  0.9782     0.8854    0.9295
+        owl-c   cuda  0.8734     0.8130    0.8421
+        owl-t   cuda  0.8472     0.8661    0.8565
+        owl-d   cuda  0.9563     0.9481    0.9522
 ```
+
+Notably `owl-d` (a *general* model with a DINOv3 foundation backbone) nearly
+matches the in-domain `caribou-owl-c` zero-shot — its backbone generalizes across
+domains far better than the DLA/Swin encoders.
 
 !!! note "Zero-shot vs in-domain"
     `owl-c` / `owl-t` / `owl-d` are trained on **other** public overhead datasets,
@@ -211,8 +223,8 @@ scaled.
 | Symptom | Cause / Fix |
 |---|---|
 | `wandb: ERROR ...` or a login prompt | The demo sets `WANDB_MODE=disabled`. Running `tools/test.py` by hand requires `WANDB_MODE=disabled` (or `wandb login`). |
-| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Install a GPU build with `uv pip install torch torchvision --torch-backend=auto` (see [Installation → GPU support](installation.md#gpu-support)). |
-| `RuntimeError: ... unable to find an engine` on an older GPU | Some newer wheels omit kernels for older architectures (e.g. Volta / V100). Use `uv pip install torch torchvision --torch-backend=cu124`, which includes them. |
+| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Sync the matching CUDA group, e.g. `uv sync --no-default-groups --group cu121`, and run with the same flags (see [Installation → GPU support](installation.md#gpu-support)). |
+| `RuntimeError: ... unable to find an engine` on an older GPU | Some wheels omit kernels for older architectures (e.g. Volta / V100 on `cu124`/`cu128`). Use `uv sync --no-default-groups --group cu121`. |
 | Red prediction dots look shifted toward the top-left / "smaller" | Predictions are in the model's down-sampled space — pass `--pred-scale 2` (the OWL-C `down_ratio`) to the visualizer. |
 | `ImportError: libGL.so.1` / `libgthread-2.0.so.0` | Image libs need system glib/GL. The project pins `opencv-python-headless`; re-run `uv sync` if it was replaced. |
 | Checksum mismatch on weights | A corrupted/partial download. Delete `demo_data/weights/` and re-run. |

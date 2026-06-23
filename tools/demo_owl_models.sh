@@ -33,9 +33,12 @@
 #   -h, --help                Show this help and exit.
 #
 # Environment:
-#   UV_RUN   Command used to run Python (default "uv run"). Set to
-#            "uv run --no-sync" on networks that block PyTorch's wheel host so the
-#            existing .venv is used without a re-sync.
+#   UV_RUN   Command used to run Python (default "uv run"). For GPU runs, sync the
+#            CUDA group first and point UV_RUN at it so uv keeps the GPU build:
+#              uv sync --no-default-groups --group cu121   # cu121 for Volta/V100
+#              export UV_RUN="uv run --no-default-groups --group cu121"
+#            On networks that block PyTorch's wheel host, use "uv run --no-sync"
+#            to reuse the existing .venv without a re-sync.
 #
 # Re-running is cheap: downloads, extraction, and the subset are skipped when
 # they already exist.
