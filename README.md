@@ -47,11 +47,12 @@ export PATH="$HOME/.local/bin:$PATH"
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU build of PyTorch (works everywhere)
-# For a GPU, install a matching build after syncing (uv auto-detects the driver):
-#   uv sync --no-default-groups --group gpu     # GPU build; see INSTALL.md → GPU support
+# For a GPU, sync the GPU build instead:
+#   uv sync --no-default-groups --group gpu     # see INSTALL.md → GPU support
 
-# 3. Smoke test
-uv run python -c "import animaloc.models, dinov3; print('OK')"
+# 3. Activate the venv, then run with plain `python`
+source .venv/bin/activate
+python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 See [INSTALL.md](INSTALL.md) for DINOv3 weights download and troubleshooting.
@@ -65,7 +66,7 @@ animaloc/    # Training/eval package vendored from HerdNet (MIT)
 dinov3/      # DINOv3 encoder vendored from facebookresearch/dinov3 (DINOv3 License)
 tools/       # train.py, test.py, infer.py, patcher.py
 configs/     # Hydra configs for OWL-C / OWL-D / OWL-T training and eval
-docs/        # MkDocs Material site (build with `uv run --extra docs mkdocs build`)
+docs/        # MkDocs Material site (build with `make docs`)
 ```
 
 See [NOTICE](NOTICE) for upstream attribution and third-party licenses.

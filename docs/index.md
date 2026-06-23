@@ -36,7 +36,8 @@ export PATH="$HOME/.local/bin:$PATH"   # make uv available in the current shell
 git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU PyTorch; for a GPU: `uv sync --no-default-groups --group gpu`
-uv run python -c "import animaloc.models, dinov3; print('OK')"
+source .venv/bin/activate
+python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 Then see:

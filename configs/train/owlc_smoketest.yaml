@@ -1,7 +1,7 @@
 # Smoke-test training config: 1 epoch, batch_size=1, OWL-C (simplest model),
 # 4 synthetic 512x512 images at /tmp/owl-smoketest/train, 2 val images at /tmp/owl-smoketest/val.
 # Run with:
-#   WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+#   WANDB_MODE=disabled python tools/train.py train=owlc_smoketest
 wandb_project: 'owl-smoketest'
 wandb_entity: 'anonymous'
 wandb_run: 'smoketest'

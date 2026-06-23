@@ -5,8 +5,9 @@
 # CUDA GPU (++test.device_name=cuda); CPU works but is slow. Driven by
 # tools/demo_owl_models.sh, or by hand:
 #
+#   source .venv/bin/activate
 #   export OWL_DEMO_DATA=/abs/path/to/demo_data
-#   WANDB_MODE=disabled uv run python tools/test.py test=owld_caribou_demo \
+#   WANDB_MODE=disabled python tools/test.py test=owld_caribou_demo \
 #       ++test.model.pth_file=$OWL_DEMO_DATA/models/OWL-D.pth \
 #       ++test.dataset.root_dir=$OWL_DEMO_DATA/subset \
 #       ++test.dataset.csv_file=$OWL_DEMO_DATA/subset/gt.csv \

@@ -9,8 +9,9 @@
 # a subset, exports OWL_DEMO_DATA, and picks the device automatically. To run it
 # by hand:
 #
+#   source .venv/bin/activate
 #   export OWL_DEMO_DATA=/abs/path/to/demo_data
-#   WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
+#   WANDB_MODE=disabled python tools/test.py test=owlc_caribou_demo \
 #       ++test.dataset.root_dir=$OWL_DEMO_DATA/subset \
 #       ++test.dataset.csv_file=$OWL_DEMO_DATA/subset/gt.csv \
 #       ++test.model.pth_file=$OWL_DEMO_DATA/weights/best_model.pth \

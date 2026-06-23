@@ -57,29 +57,36 @@ reference dataset paths under `dataset.root_dir`.
 
 ## Training
 
+!!! note "Activate the venv first"
+    All commands below assume the project venv is active:
+    `source .venv/bin/activate` (after `uv sync`, or
+    `uv sync --no-default-groups --group gpu` for a GPU — see
+    [Installation](installation.md)). Using the activated venv runs the build you
+    synced without reverting it; avoid bare `uv run` on a GPU.
+
 Training is launched via Hydra:
 
 ```bash
-uv run python tools/train.py --config-path ../configs --config-name train/<config-name>
+python tools/train.py --config-path ../configs --config-name train/<config-name>
 ```
 
 Examples:
 
 ```bash
 # OWL-C on the terrestrial dataset
-uv run python tools/train.py --config-path ../configs \
+python tools/train.py --config-path ../configs \
     --config-name train/herdnet_loc_branch_terrestrial_datasets
 
 # OWL-D ViT-B/16 frozen with proj read-token, r=12
-uv run python tools/train.py --config-path ../configs \
+python tools/train.py --config-path ../configs \
     --config-name train/exp_dpt_vitb_proj_r12_frozen
 
 # OWL-D ViT-H+/16 on the overhead-generalized split
-uv run python tools/train.py --config-path ../configs \
+python tools/train.py --config-path ../configs \
     --config-name train/exp_dpt_vith_dinov3_overhead_generalized
 
 # OWL-T hybrid multiscale residual on the Eikelboom dataset
-uv run python tools/train.py --config-path ../configs \
+python tools/train.py --config-path ../configs \
     --config-name train/herdnet_hybrid_multiscale_detection_branch_final_eikelboom
 ```
 
@@ -94,7 +101,7 @@ listed above. Hydra writes outputs under `outputs/` (gitignored).
 ## Evaluation
 
 ```bash
-uv run python tools/test.py --config-path ../configs \
+python tools/test.py --config-path ../configs \
     --config-name test/<config-name>
 ```
 
@@ -107,7 +114,7 @@ and reports F1 / precision / recall / MAE / RMSE per class.
 `tools/infer.py` runs the original `HerdNet` model end-to-end:
 
 ```bash
-uv run python tools/infer.py <images_dir> <model.pth>
+python tools/infer.py <images_dir> <model.pth>
 ```
 
 Outputs land in `<images_dir>/<date>_HerdNet_results/<date>_detections.csv`.
@@ -121,7 +128,7 @@ model input size. `tools/patcher.py` tiles them into model-ready patches
 with configurable overlap:
 
 ```bash
-uv run python tools/patcher.py <images_dir> <height> <width> <overlap>
+python tools/patcher.py <images_dir> <height> <width> <overlap>
 ```
 
 The output directory mirrors the input layout, with each large image
@@ -164,17 +171,17 @@ fresh install works without needing real data:
 
 ```bash
 # 1. Forward-pass test for all 6 OWL models (~30 s on CPU)
-uv run python tests/smoke_forward.py
+python tests/smoke_forward.py
 
 # 2. Build a synthetic mini-dataset (4 train + 2 val 512x512 images)
-uv run python tests/make_synthetic_dataset.py
+python tests/make_synthetic_dataset.py
 
 # 3. Train OWL-C for one epoch on the synthetic data
-WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+WANDB_MODE=disabled python tools/train.py train=owlc_smoketest
 
 # 4. Evaluate the resulting checkpoint
 CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
-WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest \
+WANDB_MODE=disabled python tools/test.py test=owlc_smoketest \
     "++test.model.pth_file=$CKPT"
 ```
 

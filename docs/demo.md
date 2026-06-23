@@ -33,7 +33,8 @@ Install the environment with `uv` (see [Installation](installation.md)):
 
 ```bash
 uv sync
-uv run python -c "import animaloc.models, dinov3; print('OK')"
+source .venv/bin/activate
+python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 You also need `curl` and `unzip` on your `PATH` (both are standard on Linux/macOS).
@@ -154,9 +155,12 @@ curl -fL -o demo_data/test.zip \
     "https://zenodo.org/api/records/20802844/files/test.zip/content"
 unzip -q demo_data/test.zip -d demo_data/test
 
-# 2. Run OWL-C eval (CPU shown; use ++test.device_name=cuda for GPU)
+# 2. Activate the venv, then run OWL-C eval
+#    (CPU shown; for a GPU, `uv sync --no-default-groups --group gpu` first and
+#     add ++test.device_name=cuda)
+source .venv/bin/activate
 export OWL_DEMO_DATA="$(pwd)/demo_data"
-WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
+WANDB_MODE=disabled python tools/test.py test=owlc_caribou_demo \
     ++test.device_name=cpu \
     ++test.model.pth_file="$OWL_DEMO_DATA/weights/best_model.pth" \
     ++test.dataset.root_dir="$OWL_DEMO_DATA/test" \
@@ -166,7 +170,7 @@ WANDB_MODE=disabled uv run python tools/test.py test=owlc_caribou_demo \
 # 3. Visualize predictions onto the patches
 #    (predictions are saved in the model's down-sampled space; OWL-C uses
 #     down_ratio=2, so pass --pred-scale 2 to map them onto the patch)
-uv run python tools/visualize_detections.py \
+python tools/visualize_detections.py \
     --detections "$OWL_DEMO_DATA/run/detections.csv" \
     --images-dir "$OWL_DEMO_DATA/test" \
     --output-dir "$OWL_DEMO_DATA/viz" \
@@ -204,7 +208,7 @@ headline F1 = 0.965 is reported at a slightly different operating point
 `tools/test.py`:
 
 ```bash
-uv run python tools/visualize_detections.py \
+python tools/visualize_detections.py \
     --detections path/to/detections.csv \
     --images-dir path/to/patches \
     --output-dir path/to/viz \

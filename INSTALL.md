@@ -49,18 +49,19 @@ This will:
 
 A plain `uv sync` installs the **CPU** build of PyTorch, so it works on any
 machine and makes no assumption that you have a GPU. To run on a CUDA GPU,
-sync one matching CUDA extra instead — see [GPU support](#gpu-support) below.
+sync the GPU group instead — see [GPU support](#gpu-support) below.
 
-Activate the venv (optional — `uv run <cmd>` works without activation):
+**Activate the venv**, then run everything with plain `python` (this uses the
+build you synced — CPU or GPU — and never re-syncs it):
 
 ```bash
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 ```
 
 ## 3. Smoke test
 
 ```bash
-uv run python -c "import animaloc.models, dinov3; print('OK')"
+python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 Expected output: `OK`.
@@ -68,7 +69,7 @@ Expected output: `OK`.
 A more thorough check that lists the registered models:
 
 ```bash
-uv run python -c "from animaloc.models import MODELS; print(sorted(MODELS.registry_names))"
+python -c "from animaloc.models import MODELS; print(sorted(MODELS.registry_names))"
 ```
 
 Expected:
@@ -82,9 +83,9 @@ mini training + eval run on synthetic data), use the bundled smoke
 tests:
 
 ```bash
-uv run python tests/smoke_forward.py
-uv run python tests/make_synthetic_dataset.py
-WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+python tests/smoke_forward.py
+python tests/make_synthetic_dataset.py
+WANDB_MODE=disabled python tools/train.py train=owlc_smoketest
 ```
 
 See [`tests/README.md`](https://github.com/microsoft/MegaDetector-Overhead/blob/main/tests/README.md).

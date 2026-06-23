@@ -4,7 +4,7 @@
 # tools/train.py.
 #
 # Run with:
-#   WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest
+#   WANDB_MODE=disabled python tools/test.py test=owlc_smoketest
 wandb_project: 'owl-smoketest'
 wandb_entity: 'anonymous'
 wandb_run: 'smoketest_eval'

@@ -32,8 +32,9 @@ git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU PyTorch; for a GPU see "GPU support" below
 
-# 3. Smoke test
-uv run python -c "import animaloc.models, dinov3; print('OK')"
+# 3. Activate the venv, then smoke test with plain `python`
+source .venv/bin/activate
+python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
 `uv sync` will:

@@ -8,7 +8,7 @@
 # (download per INSTALL.md or symlink to a local DINOv3 weights dir).
 #
 # Run with:
-#   WANDB_MODE=disabled uv run python tools/train.py train=owld_s_smoketest
+#   WANDB_MODE=disabled python tools/train.py train=owld_s_smoketest
 wandb_project: 'owl-smoketest'
 wandb_entity: 'anonymous'
 wandb_run: 'smoketest_owld_s'

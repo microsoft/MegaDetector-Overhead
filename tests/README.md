@@ -22,25 +22,28 @@ flow, checkpoints save/load, metrics compute).
 
 ## Run
 
+Activate the venv first (`source .venv/bin/activate` after `uv sync`), then run
+with plain `python`:
+
 ```bash
 # 1. Forward-pass smoke test (all 6 OWL models)
-uv run python tests/smoke_forward.py
+python tests/smoke_forward.py
 
 # 2. Synthetic dataset (writes /tmp/owl-smoketest/)
-uv run python tests/make_synthetic_dataset.py
+python tests/make_synthetic_dataset.py
 
 # 3. OWL-C training smoke (one epoch, batch_size=1, CPU)
-WANDB_MODE=disabled uv run python tools/train.py train=owlc_smoketest
+WANDB_MODE=disabled python tools/train.py train=owlc_smoketest
 
 # 4. OWL-C evaluation smoke on the checkpoint produced above
 CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
-WANDB_MODE=disabled uv run python tools/test.py test=owlc_smoketest \
+WANDB_MODE=disabled python tools/test.py test=owlc_smoketest \
     "++test.model.pth_file=$CKPT"
 
 # 5. (Optional) OWL-D-S training+eval smoke (requires DINOv3 weights)
-WANDB_MODE=disabled uv run python tools/train.py train=owld_s_smoketest
+WANDB_MODE=disabled python tools/train.py train=owld_s_smoketest
 CKPT=$(ls -t outputs/*/*/best_model.pth | head -1 | xargs realpath)
-WANDB_MODE=disabled uv run python tools/test.py test=owld_s_smoketest \
+WANDB_MODE=disabled python tools/test.py test=owld_s_smoketest \
     "++test.model.pth_file=$CKPT"
 ```
 
