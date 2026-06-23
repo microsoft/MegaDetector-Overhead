@@ -87,37 +87,46 @@ Repository = "https://github.com/microsoft/MegaDetector-Overhead"
 Issues = "https://github.com/microsoft/MegaDetector-Overhead/issues"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# uv configuration: install the vendored DINOv3 from the in-tree path,
-# editable, instead of resolving it from PyPI (where it does not exist).
-# ─────────────────────────────────────────────────────────────────────────────
-[tool.uv.sources]
-dinov3 = { path = "dinov3", editable = true }
-# Install the CPU build of PyTorch on all platforms via uv's documented
-# CPU-only pattern. This makes a plain `uv sync` work everywhere — any OS, with
-# or without a GPU — and keeps the lockfile small and reproducible.
+# PyTorch CPU / CUDA selection (uv dependency-groups).
 #
-# GPU users: after `uv sync`, install a CUDA build that matches your driver in
-# one command (uv auto-detects the driver and picks the right wheel):
-#   uv pip install torch torchvision --torch-backend=auto
-# See INSTALL.md → "GPU support".
-torch = [
-    { index = "pytorch-cpu" },
-]
-torchvision = [
-    { index = "pytorch-cpu" },
-]
+# A plain `uv sync` installs the CPU build of torch/torchvision (the `cpu` group
+# is the default — see [tool.uv] default-groups), so it works on any machine with
+# no GPU assumptions and a small, reproducible lockfile.
+#
+# GPU users opt into a CUDA build that matches their NVIDIA driver, e.g.:
+#   uv sync --no-default-groups --group cu121   # CUDA 12.1 (incl. Volta / V100)
+#   uv sync --no-default-groups --group cu124   # CUDA 12.4
+#   uv sync --no-default-groups --group cu128   # CUDA 12.8 (recent GPUs)
+# Pick the highest cuXXX <= your driver's CUDA version (`nvidia-smi`). NOTE:
+# Volta GPUs (e.g. Tesla V100) require cu121 — cu124/cu128 drop Volta kernels.
+# The groups are mutually exclusive; only one CUDA build can be installed.
+# ─────────────────────────────────────────────────────────────────────────────
+[dependency-groups]
+cpu = ["torch", "torchvision"]
+cu121 = ["torch", "torchvision"]
+cu124 = ["torch", "torchvision"]
+cu128 = ["torch", "torchvision"]
 
-# Explicit PyTorch CPU index (only used by packages that opt in via sources
-# above, not for generic dependencies).
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
+# ─────────────────────────────────────────────────────────────────────────────
+# uv configuration.
+# ─────────────────────────────────────────────────────────────────────────────
 [tool.uv]
 # Keep the root project itself editable in the .venv so `import animaloc`
 # picks up local edits without a re-sync.
 package = true
+
+# `cpu` is the default group: a bare `uv sync` installs the CPU PyTorch build.
+default-groups = ["cpu"]
+
+# The PyTorch builds are mutually exclusive — only one may be installed at a time.
+conflicts = [
+    [
+        { group = "cpu" },
+        { group = "cu121" },
+        { group = "cu124" },
+        { group = "cu128" },
+    ],
+]
 
 # Resolve the lockfile for the platforms we support: 64-bit Linux, macOS, and
 # 64-bit Windows. This deliberately excludes niche targets (Linux/Windows on
@@ -130,6 +139,45 @@ environments = [
     "sys_platform == 'darwin'",
     "sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
+
+# Install the vendored DINOv3 from the in-tree path (editable); route torch and
+# torchvision to the matching PyTorch index per dependency-group.
+[tool.uv.sources]
+dinov3 = { path = "dinov3", editable = true }
+torch = [
+    { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu121", group = "cu121", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu124", group = "cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", group = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu121", group = "cu121", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu124", group = "cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", group = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+# Explicit PyTorch indexes (only used by packages that opt in via sources above,
+# not for generic dependencies).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Build system: setuptools is enough — we only ship the animaloc package

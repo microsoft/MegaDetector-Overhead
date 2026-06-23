@@ -47,13 +47,22 @@ jobs:
           import torch
           v = torch.__version__
           print("torch", v, "| CUDA build:", torch.version.cuda)
-          # The default `uv sync` must install the CPU build on Linux — not a
-          # CUDA build (which would pull large GPU libs and break on most
-          # drivers). Fail the lock job if that regresses.
+          # `cpu` is the default dependency-group, so a bare `uv sync` must install
+          # the CPU build on Linux — not a CUDA build (which would pull large GPU
+          # libs and break on most drivers). Fail the lock job if that regresses.
           assert v.endswith("+cpu"), f"expected a +cpu build by default, got {v!r}"
           assert torch.version.cuda is None, f"expected CPU build, got CUDA {torch.version.cuda}"
           print("OK: default resolution is the CPU build")
           PY
+
+      - name: Verify the CUDA groups resolve
+        run: |
+          # Each CUDA group must resolve to a +cuXXX build (resolution only, no
+          # large downloads), so the GPU install paths stay valid.
+          for g in cu121 cu124 cu128; do
+            echo "--- group $g ---"
+            uv sync --no-default-groups --group "$g" --dry-run 2>&1 | grep -E "torch==" | head -1
+          done
 
       - name: Commit and push uv.lock if it changed
         run: |
