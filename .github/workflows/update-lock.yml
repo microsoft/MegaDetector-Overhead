@@ -55,14 +55,12 @@ jobs:
           print("OK: default resolution is the CPU build")
           PY
 
-      - name: Verify the CUDA groups resolve
+      - name: Verify the GPU group resolves
         run: |
-          # Each CUDA group must resolve to a +cuXXX build (resolution only, no
-          # large downloads), so the GPU install paths stay valid.
-          for g in cu121 cu124 cu128; do
-            echo "--- group $g ---"
-            uv sync --no-default-groups --group "$g" --dry-run 2>&1 | grep -E "torch==" | head -1
-          done
+          # The `gpu` group must resolve to a +cu121 build (resolution only, no
+          # large download), so the GPU install path stays valid.
+          echo "--- group gpu ---"
+          uv sync --no-default-groups --group gpu --dry-run 2>&1 | grep -E "torch==" | head -1
 
       - name: Commit and push uv.lock if it changed
         run: |

@@ -87,25 +87,24 @@ Repository = "https://github.com/microsoft/MegaDetector-Overhead"
 Issues = "https://github.com/microsoft/MegaDetector-Overhead/issues"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PyTorch CPU / CUDA selection (uv dependency-groups).
+# PyTorch CPU / GPU selection (uv dependency-groups).
 #
-# A plain `uv sync` installs the CPU build of torch/torchvision (the `cpu` group
-# is the default — see [tool.uv] default-groups), so it works on any machine with
-# no GPU assumptions and a small, reproducible lockfile.
+# Two simple, reproducible options:
+#   CPU (default):  uv sync
+#   GPU:            uv sync --no-default-groups --group gpu
+# (or `make sync` / `make sync-gpu`). A bare `uv sync` installs the CPU build
+# because `cpu` is the default group — see [tool.uv] default-groups.
 #
-# GPU users opt into a CUDA build that matches their NVIDIA driver, e.g.:
-#   uv sync --no-default-groups --group cu121   # CUDA 12.1 (incl. Volta / V100)
-#   uv sync --no-default-groups --group cu124   # CUDA 12.4
-#   uv sync --no-default-groups --group cu128   # CUDA 12.8 (recent GPUs)
-# Pick the highest cuXXX <= your driver's CUDA version (`nvidia-smi`). NOTE:
-# Volta GPUs (e.g. Tesla V100) require cu121 — cu124/cu128 drop Volta kernels.
-# The groups are mutually exclusive; only one CUDA build can be installed.
+# The `gpu` group pins the CUDA 12.1 build (torch 2.5.1+cu121), which supports
+# NVIDIA Volta (sm_70, e.g. Tesla V100) through Hopper (sm_90). NOTE: this is
+# about the GPU *architecture*, not the driver — newer cu124/cu128 wheels DROP
+# Volta kernels, so the V100 needs cu121. A CUDA-12.1 build runs fine on newer
+# drivers (they are backward-compatible). Users with Blackwell-only GPUs that
+# need cu128 can add their own `cu128` group following this same pattern.
 # ─────────────────────────────────────────────────────────────────────────────
 [dependency-groups]
 cpu = ["torch", "torchvision"]
-cu121 = ["torch", "torchvision"]
-cu124 = ["torch", "torchvision"]
-cu128 = ["torch", "torchvision"]
+gpu = ["torch", "torchvision"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # uv configuration.
@@ -118,13 +117,11 @@ package = true
 # `cpu` is the default group: a bare `uv sync` installs the CPU PyTorch build.
 default-groups = ["cpu"]
 
-# The PyTorch builds are mutually exclusive — only one may be installed at a time.
+# CPU and GPU builds are mutually exclusive — only one may be installed at a time.
 conflicts = [
     [
         { group = "cpu" },
-        { group = "cu121" },
-        { group = "cu124" },
-        { group = "cu128" },
+        { group = "gpu" },
     ],
 ]
 
@@ -141,20 +138,17 @@ environments = [
 ]
 
 # Install the vendored DINOv3 from the in-tree path (editable); route torch and
-# torchvision to the matching PyTorch index per dependency-group.
+# torchvision to the matching PyTorch index per dependency-group. The indexes are
+# Linux/Windows only; macOS falls back to PyPI (its wheels are already CPU/MPS).
 [tool.uv.sources]
 dinov3 = { path = "dinov3", editable = true }
 torch = [
     { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu121", group = "cu121", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu124", group = "cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu128", group = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu121", group = "gpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 torchvision = [
     { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu121", group = "cu121", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu124", group = "cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { index = "pytorch-cu128", group = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu121", group = "gpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 # Explicit PyTorch indexes (only used by packages that opt in via sources above,
@@ -167,16 +161,6 @@ explicit = true
 [[tool.uv.index]]
 name = "pytorch-cu121"
 url = "https://download.pytorch.org/whl/cu121"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 # ─────────────────────────────────────────────────────────────────────────────
