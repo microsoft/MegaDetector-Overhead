@@ -95,12 +95,12 @@ It downloads the checkpoints from the same [Zenodo record](https://zenodo.org/re
 
 ```bash
 # CPU (default):
+uv sync
 ./tools/demo_owl_models.sh --models "caribou-owl-c owl-c owl-t"
 
-# GPU (sync the matching CUDA group first, then point UV_RUN at it so uv
-# doesn't revert to CPU — see Installation → GPU support):
-uv sync --no-default-groups --group cu121          # cu121 for Volta / V100
-export UV_RUN="uv run --no-default-groups --group cu121"
+# GPU — sync the GPU build once; the demo scripts run through the venv directly,
+# so they use it without reverting (see Installation → GPU support):
+uv sync --no-default-groups --group gpu            # or: make sync-gpu
 ./tools/demo_owl_models.sh --device cuda           # includes owl-d on GPU
 
 ./tools/demo_owl_models.sh --device cpu --full     # full test set on CPU
@@ -223,8 +223,8 @@ scaled.
 | Symptom | Cause / Fix |
 |---|---|
 | `wandb: ERROR ...` or a login prompt | The demo sets `WANDB_MODE=disabled`. Running `tools/test.py` by hand requires `WANDB_MODE=disabled` (or `wandb login`). |
-| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Sync the matching CUDA group, e.g. `uv sync --no-default-groups --group cu121`, and run with the same flags (see [Installation → GPU support](installation.md#gpu-support)). |
-| `RuntimeError: ... unable to find an engine` on an older GPU | Some wheels omit kernels for older architectures (e.g. Volta / V100 on `cu124`/`cu128`). Use `uv sync --no-default-groups --group cu121`. |
+| `CUDA: False` even though `nvidia-smi` shows a GPU | A plain `uv sync` installs the **CPU** build. Sync the GPU build (`uv sync --no-default-groups --group gpu`) and run via the activated venv (`source .venv/bin/activate`), not bare `uv run` (see [Installation → GPU support](installation.md#gpu-support)). |
+| `RuntimeError: ... unable to find an engine` on an older GPU | The wheel lacks kernels for your GPU's architecture. The `gpu` group (cu121) covers Volta (V100) – Hopper; very new GPUs need a cu128 group (see INSTALL.md). |
 | Red prediction dots look shifted toward the top-left / "smaller" | Predictions are in the model's down-sampled space — pass `--pred-scale 2` (the OWL-C `down_ratio`) to the visualizer. |
 | `ImportError: libGL.so.1` / `libgthread-2.0.so.0` | Image libs need system glib/GL. The project pins `opencv-python-headless`; re-run `uv sync` if it was replaced. |
 | Checksum mismatch on weights | A corrupted/partial download. Delete `demo_data/weights/` and re-run. |

@@ -55,26 +55,28 @@ uv run python -c "import animaloc.models, dinov3; print('OK')"
 
 ## GPU support
 
-A plain `uv sync` installs the **CPU** build of PyTorch on every platform (works
-everywhere, no GPU assumed). To use a GPU, sync the **dependency-group** matching
-your NVIDIA driver — this installs a CUDA build that is pinned in `uv.lock`
-(reproducible):
+Two reproducible install options (both pinned in `uv.lock`):
 
 ```bash
-# Pick ONE group matching your driver's CUDA version (`nvidia-smi`):
-uv sync --no-default-groups --group cu121   # CUDA 12.1+ (incl. Volta / V100)
-uv sync --no-default-groups --group cu124   # CUDA 12.4+
-uv sync --no-default-groups --group cu128   # CUDA 12.8+ (recent GPUs)
-
-uv run --no-default-groups --group cu121 \
-    python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+uv sync                                    # CPU (default) — or `make sync`
+uv sync --no-default-groups --group gpu    # GPU (NVIDIA) — or `make sync-gpu`
 ```
 
-Pick the highest `cuXXX` that is **≤** your driver's CUDA version. **Volta GPUs
-(Tesla V100) require `cu121`** — `cu124`/`cu128` drop Volta kernels and raise
-`RuntimeError: ... unable to find an engine`. Because `cpu` is the default group,
-a bare `uv sync`/`uv run` returns to CPU, so pass the group on every GPU command
-(or `uv run --no-sync` after syncing). Full details are in
+Then **activate the venv** and run Python directly (this uses whichever build you
+synced and never reverts it — no per-command flags):
+
+```bash
+source .venv/bin/activate
+python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+```
+
+The `gpu` group installs **torch 2.5.1+cu121**, which covers NVIDIA **Volta
+(sm_70, Tesla V100)** through **Hopper (sm_90)**. This is driven by the GPU
+*architecture*, not the driver — newer `cu124`/`cu128` wheels drop Volta kernels
+(a V100 on those raises `RuntimeError: ... unable to find an engine`), and a
+CUDA-12.1 build runs fine on newer drivers. Avoid bare `uv run` on the GPU (it
+re-syncs to the CPU default); use the activated venv. Full details, including how
+to add a `cu128` group for Blackwell GPUs, are in
 [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).
 
 ## Next steps

@@ -51,17 +51,16 @@ done
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-# Make uv available even when ~/.local/bin is not on PATH.
-export PATH="$HOME/.local/bin:$PATH"
-if ! command -v uv >/dev/null 2>&1; then
-  echo "ERROR: 'uv' not found. Install it first (see INSTALL.md)." >&2
+# Run Python through the project venv interpreter directly. This uses whatever
+# build was synced (CPU via `uv sync`, or GPU via
+# `uv sync --no-default-groups --group gpu`) and — unlike `uv run` — never
+# re-syncs/reverts the environment. Override with PYBIN if your venv is elsewhere.
+PYBIN="${PYBIN:-$REPO_ROOT/.venv/bin/python}"
+if [[ ! -x "$PYBIN" ]]; then
+  echo "ERROR: project venv not found at $PYBIN." >&2
+  echo "       Run 'uv sync' (CPU) or 'uv sync --no-default-groups --group gpu' (GPU) first." >&2
   exit 1
 fi
-# UV_RUN overrides how Python is launched. For GPU, sync a CUDA group and set
-#   export UV_RUN="uv run --no-default-groups --group cu121"   # cu121 for Volta/V100
-# so uv keeps the GPU build. On networks that block PyTorch's wheel host, use
-# "uv run --no-sync" to reuse the existing .venv without a re-sync.
-UV_RUN="${UV_RUN:-uv run}"
 
 mkdir -p "$DATA_DIR"
 DATA_DIR="$(cd "$DATA_DIR" && pwd)"   # absolute
@@ -114,7 +113,7 @@ if [[ "$FULL" -eq 1 ]]; then
 else
   echo "==> Building ${SUBSET_SIZE}-patch subset ..."
   SUBSET_SIZE="$SUBSET_SIZE" TEST_DIR="$TEST_DIR" SUBSET_DIR="$SUBSET_DIR" \
-    $UV_RUN python - <<'PY'
+    $PYBIN - <<'PY'
 import os, random, shutil
 import pandas as pd
 
@@ -150,11 +149,11 @@ fi
 # 4. Resolve device (auto-detect → cuda if available, else cpu)
 # ---------------------------------------------------------------------------
 if [[ "$DEVICE" == "auto" ]]; then
-  DEVICE="$($UV_RUN python -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
+  DEVICE="$($PYBIN -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
 fi
 echo "==> Device: $DEVICE"
 if [[ "$DEVICE" == "cuda" ]]; then
-  $UV_RUN python -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
+  $PYBIN -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
@@ -163,7 +162,7 @@ fi
 rm -rf "$RUN_DIR"
 echo "==> Running OWL-C inference ..."
 export OWL_DEMO_DATA="$DATA_DIR"
-WANDB_MODE=disabled $UV_RUN python tools/test.py test=owlc_caribou_demo \
+WANDB_MODE=disabled $PYBIN tools/test.py test=owlc_caribou_demo \
   ++test.device_name="$DEVICE" \
   ++test.model.pth_file="$WEIGHTS_DIR/best_model.pth" \
   ++test.dataset.root_dir="$EVAL_DIR" \
@@ -178,7 +177,7 @@ echo "==> Detections:  $DET_CSV"
 # 6. Visualize predictions on the patches
 # ---------------------------------------------------------------------------
 echo "==> Rendering prediction overlays ..."
-$UV_RUN python tools/visualize_detections.py \
+$PYBIN tools/visualize_detections.py \
   --detections "$DET_CSV" \
   --images-dir "$EVAL_DIR" \
   --output-dir "$VIZ_DIR" \

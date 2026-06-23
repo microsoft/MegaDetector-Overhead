@@ -48,7 +48,7 @@ git clone https://github.com/microsoft/MegaDetector-Overhead
 cd MegaDetector-Overhead
 uv sync                  # CPU build of PyTorch (works everywhere)
 # For a GPU, install a matching build after syncing (uv auto-detects the driver):
-#   uv sync --no-default-groups --group cu121   # GPU build; see INSTALL.md → GPU support
+#   uv sync --no-default-groups --group gpu     # GPU build; see INSTALL.md → GPU support
 
 # 3. Smoke test
 uv run python -c "import animaloc.models, dinov3; print('OK')"

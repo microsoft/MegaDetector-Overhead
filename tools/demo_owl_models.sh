@@ -33,12 +33,11 @@
 #   -h, --help                Show this help and exit.
 #
 # Environment:
-#   UV_RUN   Command used to run Python (default "uv run"). For GPU runs, sync the
-#            CUDA group first and point UV_RUN at it so uv keeps the GPU build:
-#              uv sync --no-default-groups --group cu121   # cu121 for Volta/V100
-#              export UV_RUN="uv run --no-default-groups --group cu121"
-#            On networks that block PyTorch's wheel host, use "uv run --no-sync"
-#            to reuse the existing .venv without a re-sync.
+#   PYBIN    Python interpreter to use (default <repo>/.venv/bin/python). The
+#            script runs through the project venv directly, so it uses whatever
+#            build was synced — CPU (`uv sync`) or GPU
+#            (`uv sync --no-default-groups --group gpu`) — and never re-syncs or
+#            reverts the environment the way `uv run` would.
 #
 # Re-running is cheap: downloads, extraction, and the subset are skipped when
 # they already exist.
@@ -62,7 +61,7 @@ while [[ $# -gt 0 ]]; do
     --subset-size) SUBSET_SIZE="$2"; shift 2;;
     --score-threshold) SCORE_THRESHOLD="$2"; shift 2;;
     --data-dir) DATA_DIR="$2"; shift 2;;
-    -h|--help) sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    -h|--help) sed -n '2,44p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
     *) echo "Unknown option: $1" >&2; exit 2;;
   esac
 done
@@ -70,12 +69,13 @@ done
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-export PATH="$HOME/.local/bin:$PATH"
-if ! command -v uv >/dev/null 2>&1; then
-  echo "ERROR: 'uv' not found. Install it first (see INSTALL.md)." >&2
+# Run Python through the project venv interpreter directly (no `uv run` revert).
+PYBIN="${PYBIN:-$REPO_ROOT/.venv/bin/python}"
+if [[ ! -x "$PYBIN" ]]; then
+  echo "ERROR: project venv not found at $PYBIN." >&2
+  echo "       Run 'uv sync' (CPU) or 'uv sync --no-default-groups --group gpu' (GPU) first." >&2
   exit 1
 fi
-UV_RUN="${UV_RUN:-uv run}"
 
 mkdir -p "$DATA_DIR"
 DATA_DIR="$(cd "$DATA_DIR" && pwd)"
@@ -102,11 +102,11 @@ model_gpu_only() { [[ "$1" == "owl-d" ]]; }
 # 1. Resolve device (auto-detect -> cuda if available, else cpu)
 # ---------------------------------------------------------------------------
 if [[ "$DEVICE" == "auto" ]]; then
-  DEVICE="$($UV_RUN python -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
+  DEVICE="$($PYBIN -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")' 2>/dev/null || echo cpu)"
 fi
 echo "==> Device:    $DEVICE"
 if [[ "$DEVICE" == "cuda" ]]; then
-  $UV_RUN python -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
+  $PYBIN -c 'import torch; print("    GPU:", torch.cuda.get_device_name(0))' 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
@@ -130,7 +130,7 @@ if [[ "$FULL" -eq 1 ]]; then
 else
   echo "==> Building ${SUBSET_SIZE}-patch subset ..."
   SUBSET_SIZE="$SUBSET_SIZE" TEST_DIR="$TEST_DIR" SUBSET_DIR="$SUBSET_DIR" \
-    $UV_RUN python - <<'PY'
+    $PYBIN - <<'PY'
 import os, random, shutil
 import pandas as pd
 
@@ -199,7 +199,7 @@ for m in $MODELS; do
   run_dir="$DATA_DIR/run_$m"; viz_dir="$DATA_DIR/viz_$m"
   rm -rf "$run_dir"
   echo "==> Evaluating ($mdev) ..."
-  WANDB_MODE=disabled $UV_RUN python tools/test.py "test=$cfg" \
+  WANDB_MODE=disabled $PYBIN tools/test.py "test=$cfg" \
     ++test.device_name="$mdev" \
     ++test.model.pth_file="$MODELS_DIR/$file" \
     ++test.dataset.root_dir="$EVAL_DIR" \
@@ -207,7 +207,7 @@ for m in $MODELS; do
     ++hydra.run.dir="$run_dir"
 
   echo "==> Visualizing ..."
-  $UV_RUN python tools/visualize_detections.py \
+  $PYBIN tools/visualize_detections.py \
     --detections "$run_dir/detections.csv" \
     --images-dir "$EVAL_DIR" \
     --output-dir "$viz_dir" \
@@ -218,7 +218,7 @@ for m in $MODELS; do
 
   # Append the binary-row metrics to the comparison CSV.
   MODEL="$m" DEVICE="$mdev" RUN_DIR="$run_dir" SUMMARY_CSV="$SUMMARY_CSV" \
-    $UV_RUN python - <<'PY'
+    $PYBIN - <<'PY'
 import os, pandas as pd
 run = os.environ["RUN_DIR"]
 df = pd.read_csv(os.path.join(run, "metrics_results.csv"))
@@ -238,7 +238,7 @@ done
 # ---------------------------------------------------------------------------
 echo
 echo "================ Model comparison (caribou test subset) ================"
-SUMMARY_CSV="$SUMMARY_CSV" $UV_RUN python - <<'PY'
+SUMMARY_CSV="$SUMMARY_CSV" $PYBIN - <<'PY'
 import os, pandas as pd
 df = pd.read_csv(os.environ["SUMMARY_CSV"])
 if len(df):
