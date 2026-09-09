@@ -1,16 +1,401 @@
 ---
-description: "End-to-end caribou demo for MegaDetector-Overhead: download the Zenodo OWL-C weights and test patches, run OWL-C inference on GPU or CPU, and visualize the predictions."
+description: "OWL inference notebook with explicit CPU and optional full-image routes, plus existing caribou evaluation and model-comparison shell demos."
 tags:
   - demo
   - quickstart
   - caribou
   - OWL-C
+  - OWL-D
+  - notebook
   - inference
   - visualization
   - PyTorch-Wildlife
 ---
 
-# Caribou Demo (download → infer → visualize)
+# OWL demos
+
+## OWL inference notebook
+
+Open
+[`notebooks/owl_inference_demo.ipynb`](https://github.com/microsoft/MegaDetector-Overhead/blob/main/notebooks/owl_inference_demo.ipynb)
+from a checkout that contains the notebook, `tools/demo_owl_notebook.py`, and
+`notebooks/sample_data.json`. The matching release is
+[owl-notebook-v1](https://github.com/microsoft/MegaDetector-Overhead/releases/tag/owl-notebook-v1).
+The notebook is an annotation-free localization demo, separate from the
+caribou evaluation workflows below.
+
+This existing repository is the canonical notebook publication location.
+GitHub previews the `.ipynb`; it does not execute it. Users clone the matching
+revision and run it in Jupyter or VS Code. The sample ZIP belongs in a release
+asset on the same repository, not in Git history; model weights stay on Zenodo.
+
+The default model is **OWL-D / `OWLD_H`**: DINOv3 ViT-H+/16 with a DPT decoder
+and frozen backbone. The approximately **3.5 GB** released `OWL-D.pth`
+contains the full backbone and loads with `pretrained=False`; it needs **no
+separate Meta weights download** for inference. A compatible CUDA GPU and
+sufficient host/GPU memory are required for this notebook route. CPU users
+must explicitly set `MODEL='owl-c'`, `DEVICE='cpu'`, selecting the released
+general `OWL-C.pth`. Missing CUDA does not skip OWL-D or silently substitute a
+model.
+
+### Local Jupyter / VS Code
+
+New users do **not** need the author's Conda environments. They need Git, an
+installed [uv](https://docs.astral.sh/uv/getting-started/installation/), network
+access, and sufficient disk/RAM. Default OWL-D additionally needs a compatible
+NVIDIA GPU and driver; uv installs the locked PyTorch CUDA wheels, not the
+host GPU driver. CPU users explicitly choose OWL-C instead.
+
+Clone the notebook/backend together:
+
+```bash
+git clone https://github.com/microsoft/MegaDetector-Overhead.git
+cd MegaDetector-Overhead
+```
+
+`uv sync --locked` reads `.python-version`, `pyproject.toml`, and `uv.lock`,
+obtains the supported Python version if needed, and creates **this checkout's
+own `.venv`**, including the notebook dependencies and vendored `animaloc`/
+`dinov3` packages. It does not depend on a preexisting Conda installation.
+
+```bash
+# Run from a checkout containing the notebook and its backend.
+uv sync --locked --no-default-groups --group gpu --extra notebook
+# CPU alternative instead; also change MODEL/DEVICE in the notebook:
+# uv sync --locked --extra notebook
+.venv/bin/python -m ipykernel install --user \
+    --name megadetector-overhead --display-name "MegaDetector Overhead"
+.venv/bin/python -m jupyterlab notebooks/owl_inference_demo.ipynb
+```
+
+In VS Code, choose the **MegaDetector Overhead** or project `.venv` kernel.
+Use `.venv\Scripts\python.exe` on Windows. Local setup checks and reuses the
+existing environment rather than automatically syncing it. All backend stages
+use the selected `.venv` interpreter directly; avoid bare `uv run`, which can
+restore the default CPU PyTorch build. The optional `notebook` extra adds
+JupyterLab, ipykernel, nbformat, and nbclient without changing default
+CPU/GPU group selection.
+
+The local notebook checks this environment and prints repair instructions
+when it is missing; it deliberately does **not** run installers automatically.
+Opening the `.ipynb` by itself is therefore not the complete first-time setup.
+Once initialized, all model inference runs in `.venv`, even if VS Code uses
+another compatible presentation kernel. GitHub is a preview, not a runtime.
+
+If the existing environment is ready, launch Jupyter directly without syncing:
+
+```bash
+.venv/bin/jupyter lab notebooks/owl_inference_demo.ipynb
+```
+
+Choose **Restart Kernel and Run All Cells**. The default is OWL-D on CUDA with
+four patches. Set `RUN_FULL_RESOLUTION=True` before restarting/running all to
+include the two large images. Review the printed model/device, image inventory,
+counts, inline figures, tables, and saved artifact paths.
+
+The manifest downloads **`OWL_SAMPLE_DATA.zip` from release `owl-notebook-v1`**.
+Leave `SAMPLE_URL=''` to use that URL. Set `ARCHIVE` to use an already downloaded
+copy of the exact ZIP instead. Files are checksum-verified and cached under
+`demo_data/`. Do not substitute the separate caribou test ZIP.
+
+### What the notebook runs
+
+1. Locate/validate the repository and managed backend, then inspect the
+   interpreter, revision, PyTorch/CUDA, GPU resources, and chosen model/device
+   **before downloading samples or weights**.
+2. Verify and safely prepare all six images under
+   `demo_data/owl_notebook/OWL_DATA`; show the inventory CSV and contact sheet.
+3. Validate/reuse the selected checkpoint from `demo_data/models/`, or download
+   its pinned public Zenodo file when missing. A local checkpoint override is
+   available through `CHECKPOINT`.
+4. Predict the **four 512×512 patches**, reporting settings, checkpoint loading,
+   counts, per-image timing, and resources.
+5. Display the summary, a detections CSV preview, and all four original /
+   normalized-display FIDT heatmap / predicted-point comparison figures.
+6. Optionally process **both 5472×3648 images** at their original dimensions
+   when `RUN_FULL_RESOLUTION=True`, using overlapping tiles rather than
+   silently resizing the survey imagery.
+7. Independently enable `RUN_CUSTOM_IMAGES=True` and set `CUSTOM_IMAGES_DIR`
+   for annotation-free inference on your image directory (`selection=all`).
+
+Default inference uses 512-pixel tiles, 160-pixel overlap, mean stitching,
+half-resolution heatmaps, and LMDS with a 3×3 peak kernel.
+`ADAPT_THRESHOLD=0.3` is adaptive peak selection,
+`NEGATIVE_THRESHOLD=0.1` suppresses weak/background responses, and
+`SCORE_THRESHOLD=0.2` is a separate absolute retained-peak cutoff.
+The same retained detections determine exported coordinates, overlays, and
+counts. Every inference call creates a new timestamp/UUID directory under
+`demo_data/owl_notebook/runs/`, so reruns cannot reuse stale outputs.
+
+### Outputs and interpretation
+
+| Artifact in each run directory | Contents |
+|---|---|
+| `detections.csv` | `images,x,y,dscores,labels`; generic animal points in **original-image pixels** |
+| `summary.csv` | `images,width,height,count,seconds,tiles`; includes zero-count images |
+| `metadata.json` | Run settings, checkpoint/runtime details, and actual figure filenames |
+| `figures/` | Original / FIDT heatmap / point-overlay comparisons; optional detail figures |
+| `overlays/` | Saved predicted-point overlays |
+
+The frontend uses standard-library CSV/JSON and IPython display, not PyTorch
+or `animaloc` imports in the host kernel. It consumes the `metadata.json`
+`figures` list rather than deriving potentially long filenames. Local
+`FileLink` exports work when Jupyter is launched from the repository root;
+VS Code can open the printed paths. Colab users can use its Files panel or
+`google.colab.files.download(str(PATCH_OUTPUT / 'detections.csv'))`.
+Nothing is uploaded or published automatically.
+
+**Predicted count is the number of retained peaks. FIDT heatmap sums are not
+animal counts, and peak scores are not calibrated probabilities.** Display
+normalization does not make heatmap colors comparable across images. The sum
+of detections across demo images is not a population estimate, especially
+where patches and full images overlap. No species identification or
+precision/recall/F1 is provided for these unannotated samples. A true zero
+prediction retains its summary row and detection CSV headers; errors must
+remain errors.
+
+!!! warning "Notebook coordinates are already in original-image pixels"
+    Do **not** apply the legacy caribou evaluation visualizer's
+    `--pred-scale 2` to notebook exports. The notebook backend converts
+    heatmap coordinates exactly once.
+
+### Backend stages from the command line
+
+These are the same stages the notebook invokes through the project Python.
+The environment check does not download assets; preparation uses the public
+manifest URL unless an explicit local archive or URL override is given.
+
+```bash
+.venv/bin/python tools/demo_owl_notebook.py environment --model owl-d --device auto
+.venv/bin/python tools/demo_owl_notebook.py prepare --data-dir demo_data/owl_notebook
+
+# A NEW output directory is required for each inference invocation.
+OUT="demo_data/owl_notebook/runs/$(.venv/bin/python -c 'import uuid; print(uuid.uuid4().hex)')"
+.venv/bin/python tools/demo_owl_notebook.py infer \
+    --model owl-d --device auto \
+    --images-dir demo_data/owl_notebook/OWL_DATA --selection patches \
+    --output-dir "$OUT" --score-threshold 0.2 \
+    --adapt-threshold 0.3 --negative-threshold 0.1 \
+    --tile-size 512 --overlap 160
+```
+
+For optional full images, select `full` and create another new output directory.
+For your image directory, set `--images-dir` and `--selection all`.
+For CPU, explicitly use `--model owl-c --device cpu` after syncing the CPU
+environment. Optional inputs are `prepare --archive PATH`,
+`prepare --sample-url URL` for an explicit URL override, and
+`infer --checkpoint PATH` for the selected model. `infer --model-cache PATH`
+selects a separate cache without changing `demo_data/models`; it cannot be
+combined with `--checkpoint`. In the notebook, the equivalent option is
+`MODEL_CACHE`.
+
+Weights can be downloaded and verified without constructing a GPU model:
+
+```bash
+# Use new empty cache directories for a genuine fresh-download check.
+.venv/bin/python tools/demo_owl_notebook.py fetch-model --model owl-d \
+    --model-cache demo_data/owl_notebook/fresh_models/owl-d
+.venv/bin/python tools/demo_owl_notebook.py fetch-model --model owl-c \
+    --model-cache demo_data/owl_notebook/fresh_models/owl-c
+```
+
+A download error fails explicitly and does not fall back to the working cache.
+Existing valid files in the selected cache are labeled as cached, not as newly
+downloaded.
+
+Downloads use the official Zenodo public file URL, with its official API
+content endpoint as a network-failure fallback. Both must match the same
+published size and SHA-256. Each endpoint has bounded retries, and an integrity
+failure is never bypassed by trying a different URL. The endpoints can be
+intermittent; an exhausted download fails explicitly rather than returning
+empty predictions.
+
+### Local backend validation
+
+The following evidence was recorded on **2026-09-08 using the backend CLI**,
+the supplied local archive, and cached checkpoints:
+
+- **14 focused backend unit tests passed**, including mocked successful and
+  corrupt downloads.
+- **OWL-D / `OWLD_H`, CUDA:** real inference completed for all four 512×512
+  patches, reporting retained predicted counts **58, 19, 14, 9** (**100 total**).
+  This run used a Tesla V100 32 GB in **FP32**, with **3.543 GiB peak PyTorch GPU
+  allocation**. That allocation is not total process/device memory or a
+  minimum GPU requirement.
+- **Explicit OWL-C CPU route:** real inference completed for the same four
+  patches, reporting retained predicted counts **55, 17, 14, 9** (**95 total**).
+- **OWL-D full-resolution route:** real tiled inference completed for both
+  **5472×3648** images, using **160 tiles each** and reporting retained predicted
+  counts **4 and 6**. Peak PyTorch GPU allocation was **3.5815 GiB** on the
+  V100 32 GB. Both full images retained their original resolution.
+
+These are localization counts in the backend's image order, **not ground-truth
+counts or accuracy measurements**. They do not establish population size,
+species identity, or superiority of either model. All these real backend routes
+wrote their output artifacts. The observed approximately **3.6 GiB GPU tensor
+allocation is not a universal minimum memory requirement**; allocator
+reservations, CUDA/kernel overhead, and other memory use differ.
+Actual end-to-end notebook execution has also succeeded separately through
+nbclient, as documented below; this is not inferred merely from backend CLI
+success.
+
+Earlier Zenodo page/API requests returned timeouts/HTTP 504 from this host.
+Subsequent retrieval of the primary record API and release README succeeded:
+the published sizes and SHA-256 hashes match the configured OWL-D and OWL-C
+pins, and the files also match the API's MD5 checksums. The release declares
+CC BY-NC-SA 4.0; also review the included DINOv3 backbone terms.
+Both **OWL-D and OWL-C were subsequently downloaded in full into separate,
+initially empty caches**, and their sizes/SHA-256 hashes passed verification.
+The working `demo_data/models/` cache was unchanged. Local download logs and
+files are under `demo_data/owl_notebook/public_model_checks/`.
+Use the isolated-cache commands above to repeat this check; choose new cache
+directories to avoid merely reusing the successful downloads.
+Fresh model requests on 2026-09-09 encountered intermittent gateway failures
+and an interrupted transfer, so remote availability is not guaranteed.
+The official-endpoint fallback and integrity checks do not hide final errors.
+
+### Local notebook execution
+
+**Verified on 2026-09-08:** nbclient successfully executed the complete
+**23-cell notebook** with default OWL-D and the full-resolution switch enabled.
+All four patches and both 5472×3648 images completed. A second complete
+notebook execution explicitly configured `MODEL='owl-c'`, `DEVICE='cpu'`
+and completed the four-patch CPU route. The recorded notebook outputs include
+environment information, progress messages, tables, and inline figures.
+
+Notebook counts matched the separately verified backend runs: OWL-D patch
+counts **58, 19, 14, 9**, full-image counts **4 and 6**, and CPU OWL-C patch
+counts **55, 17, 14, 9**. These are predicted localization counts, not
+ground truth or accuracy measurements.
+
+From the repository root, use
+[`tests/execute_owl_notebook.py`](https://github.com/microsoft/MegaDetector-Overhead/blob/main/tests/execute_owl_notebook.py)
+in the same checkout as the notebook/backend:
+
+```bash
+# Preserve the existing selected environment; do not use bare uv run.
+.venv/bin/python tests/execute_owl_notebook.py --full \
+    --output demo_data/owl_notebook/my_check_owld.ipynb
+.venv/bin/python tests/execute_owl_notebook.py --model owl-c --device cpu \
+    --output demo_data/owl_notebook/my_check_owlc_cpu.ipynb
+```
+
+Choose a **new output filename for each rerun**; the runner deliberately refuses
+to overwrite previous executed notebooks. It returns exit code 0 and prints
+`Executed notebook: ...` on success. On failure it retains the partial artifact
+and reports the execution error. Use `--model-cache PATH` to run against an
+explicit separate model cache.
+
+The verified local artifacts are
+`demo_data/owl_notebook/executed_owld.ipynb` and
+`demo_data/owl_notebook/executed_owlc_cpu.ipynb`. Open them locally in
+Jupyter/VS Code to inspect execution outputs. They and the CSV/PNG run
+directories are **ignored local artifacts, not published repository files**.
+The source `notebooks/owl_inference_demo.ipynb` keeps its outputs cleared.
+The runner and notebook are distributed together at the matching repository ref.
+
+**Fresh environment check (2026-09-09):** a separate working snapshot began
+with an empty `.venv` that could not import PyTorch. The documented
+`uv sync --locked --no-default-groups --group gpu --extra notebook` installed
+the environment with author Conda/PYTHONPATH settings removed. All notebook
+cells then completed for the four patches and both full images using the
+previously verified checkpoint and supplied sample ZIP. Direct fresh model
+downloads failed intermittently that day; this check proves environment
+independence on the Linux/CUDA host, not remote-service uptime or every
+operating system.
+
+### Repository publication and sample release preparation
+
+The publication layout is:
+
+| Resource | Location |
+|---|---|
+| Notebook, helpers, manifest, dependency files, and documentation | Existing `microsoft/MegaDetector-Overhead` GitHub repository |
+| `OWL_SAMPLE_DATA.zip` | GitHub release asset on that same repository |
+| OWL model weights | Existing Zenodo record 20802844 |
+| LinkedIn notebook link | Verified GitHub URL of the published `.ipynb`, not a local filesystem or sample ZIP URL |
+
+To stage assets locally, use a new or empty ignored directory:
+
+```bash
+.venv/bin/python tools/demo_owl_notebook.py stage-release \
+    --output-dir demo_data/owl_notebook/release_assets
+```
+
+This copies the exact 18,269,117-byte ZIP, verifies its SHA-256, and writes
+`SHA256SUMS`, `SAMPLE_ATTRIBUTION.json`, and `RELEASE_NOTES.txt`.
+It never uploads files, creates releases, or changes Git history. The notes
+retain source-specific licenses and the origin of each confirmation:
+**staged does not mean published**.
+Choose another empty staging directory if regenerating after metadata changes;
+existing artifacts are not overwritten.
+
+After source terms are resolved and the repository owner explicitly approves
+publication, the manual release procedure is:
+
+1. Publish the notebook, backend, manifest, dependencies, and docs together in
+   the existing repository, and identify the actual published revision.
+2. Create the intended GitHub release on that repository and attach the exact
+   ZIP plus completed attribution/checksum notes. Do not commit the ZIP.
+3. Copy the real release-asset download URL into the manifest's `url` field
+   and publish that manifest update. Do not assume a guessed tag/path exists.
+4. In a separate checkout of the published revision with no local ZIP or
+   cached weights, install the environment and execute the default notebook.
+   Verify sample/model downloads, the four-image results, and exports. Test
+   full-resolution and explicit CPU routes as applicable to the release.
+5. Verify the actual GitHub notebook link and replace only `[NOTEBOOK_URL]`
+   in the approved LinkedIn publication copy.
+
+No step that publishes code or assets has been performed by release staging.
+
+### Colab setup path and release gates
+
+The notebook contains a **not-yet-verified Colab setup path**, not a promise of
+hosted execution. It is experimental and **does not block the local
+Jupyter/VS Code release**. Select a compatible GPU runtime for default OWL-D, and set
+`REPO_REF='owl-notebook-v1'` for the matching notebook, backend, and manifest.
+Setup clones only into an absent dedicated directory and validates any existing
+checkout without resets, destructive updates, or overwrites. Configure
+`REPO_PATH` to use an existing development checkout.
+
+Hosted Python may not satisfy `>=3.11,<3.13`. If needed, setup installs `uv`
+through pip in the disposable hosted environment and creates a managed project
+Python 3.11 backend using the selected CPU/GPU group and notebook extra. Every
+stage runs in a subprocess through that `.venv` Python; the hosted kernel
+never imports PyTorch or `animaloc`. A ready backend is reused unless the
+explicit `RESYNC_COLAB_ENVIRONMENT` repair switch is enabled.
+
+When maintaining a release:
+
+- Publish the matching notebook/backend/manifest ref and verify its access.
+- Preserve the **exact sample ZIP URL** and verify a clean checksum-checked
+  download. The local archive is not proof of public availability.
+- Retain **source-specific terms and creator/source credits** with the asset:
+  contributor-confirmed SheepCounter Public Domain and HerdNet CC BY-NC-SA 4.0,
+  plus primary-source-verified caribou CC BY-NC-SA 4.0. Redistribution permission
+  is confirmed; see
+  [sample access notes](datasets.md#owl-notebook-sample-images).
+- Verify fresh pinned Zenodo checkpoint downloads; a cached local model does
+  not establish current public endpoint availability.
+- Keep the verified local notebook evidence above distinct from hosted
+  support. **Actual Colab execution must be tested separately** before
+  advertising that support.
+
+The source notebook has cleared execution outputs; the successful local
+executed copies are retained only as ignored artifacts. Hosted execution is
+still unverified.
+For setup failures, follow [Installation](installation.md), fix CUDA or
+explicitly choose CPU OWL-C, and keep full-resolution inference disabled if
+resources are insufficient. Never bypass integrity checks or reinterpret a
+failed download/load as an empty successful prediction.
+
+---
+
+## Caribou Demo (download → infer → visualize)
+
+**The remaining sections describe the existing caribou evaluation shell
+demos**, not the annotation-free notebook above. Their CPU auto-detection,
+ground-truth metrics, and downsampled-coordinate conventions are unchanged.
 
 This walkthrough takes you from a fresh clone to **visualized OWL-C predictions**
 on real caribou aerial patches. It uses the public

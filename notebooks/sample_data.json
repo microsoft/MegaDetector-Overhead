@@ -1,0 +1,105 @@
+{
+  "archive_name": "OWL_SAMPLE_DATA.zip",
+  "archive_size": 18269117,
+  "archive_sha256": "0627f30d55a79f83a029cc574ba6af54669b561197b1a5fa123d4ddbd8fead8b",
+  "url": "https://github.com/microsoft/MegaDetector-Overhead/releases/download/owl-notebook-v1/OWL_SAMPLE_DATA.zip",
+  "root": "OWL_DATA",
+  "redistribution": "The contributor confirms these images are from public datasets and redistribution is permitted.",
+  "publication_status": "The exact sample archive is distributed with the owl-notebook-v1 GitHub release. SheepCounter is Public Domain; HerdNet and caribou data are CC BY-NC-SA 4.0. Retain the source-specific attribution and license notices.",
+  "attribution": {
+    "mapping_source": "contributor_supplied",
+    "verification_status": "contributor_confirmed_sources_and_licenses_caribou_primary_verified",
+    "sources": [
+      {
+        "id": "sheepcounter",
+        "name": "SheepCounter",
+        "url": "https://universe.roboflow.com/riisprivate/sheepcounter",
+        "license_identifier": "Public Domain",
+        "license_url": null,
+        "required_credit": "Source acknowledgment retained for provenance: SheepCounter, https://universe.roboflow.com/riisprivate/sheepcounter. No additional license-specific credit requirement was supplied.",
+        "verification_status": "contributor_confirmed",
+        "verification_note": "The contributor explicitly confirmed Public Domain on 2026-09-09. This is not an independently verified CC0 dedication or other specific public-domain instrument."
+      },
+      {
+        "id": "herdnet-data",
+        "name": "HerdNet-associated dataset",
+        "url": "https://dataverse.uliege.be/dataset.xhtml?persistentId=doi:10.58119/ULG/MIRUU5",
+        "persistent_id": "doi:10.58119/ULG/MIRUU5",
+        "license_identifier": "CC-BY-NC-SA-4.0",
+        "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "required_credit": "Attribute the original HerdNet-associated dataset and its creators through DOI 10.58119/ULG/MIRUU5. Retain the dataset source, CC BY-NC-SA 4.0 notice, and any original attribution or required change notices.",
+        "verification_status": "contributor_confirmed",
+        "verification_note": "The contributor explicitly confirmed CC BY-NC-SA 4.0 on 2026-09-09. The source page/API was not independently retrievable from the preparation host; do not substitute the software license for these data terms."
+      },
+      {
+        "id": "caribou",
+        "name": "Overhead MegaDetector - OWL (Overhead Wildlife Locator) Benchmark - Models and Caribou Data",
+        "url": "https://zenodo.org/records/20802844",
+        "license_identifier": "CC-BY-NC-SA-4.0",
+        "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "required_credit": "Cite Chacon et al. (2026), Overhead Wildlife Locator (OWL): Benchmarking Weakly Supervised Learning for Aerial Wildlife Surveys, arXiv:2606.13911, as requested by the release README; retain the dataset source and CC BY-NC-SA 4.0 notice.",
+        "verification_status": "verified_primary_release",
+        "verification_sources": [
+          "https://zenodo.org/api/records/20802844",
+          "https://zenodo.org/api/records/20802844/files/README.md/content"
+        ],
+        "verification_note": "The primary record metadata and released README explicitly declare CC BY-NC-SA 4.0. Preserve attribution, license link, and any required change notices; commercial use is not granted by this license."
+      }
+    ]
+  },
+  "license": {
+    "scope": "per_source",
+    "verification_status": "documented_with_evidence_provenance",
+    "notice": "Each source retains its own terms: SheepCounter is Public Domain; HerdNet and caribou images are CC BY-NC-SA 4.0. Preserve source attribution, license links, and applicable change notices. The software repository's MIT license does not apply to these images."
+  },
+  "files": [
+    {
+      "path": "OWL_DATA/0be6bbfcb42a60fe493375dba2438b2c902b8763.JPG",
+      "source_id": "herdnet-data",
+      "size": 8538054,
+      "sha256": "76e18b2d0ce6ea2b81123e29692fafb15ed81be7c76f30c3eac050753c2bc0ea",
+      "width": 5472,
+      "height": 3648
+    },
+    {
+      "path": "OWL_DATA/1a4965157dabb0b21c9497eb44cf54ad4796e4ab.JPG",
+      "source_id": "herdnet-data",
+      "size": 8743260,
+      "sha256": "1fb2f943bb1300e17b8642d7ffe7cc183099699054526602a7d69da5bc650710",
+      "width": 5472,
+      "height": 3648
+    },
+    {
+      "path": "OWL_DATA/CAH_20220630_east_GRP_11_90mm_mosaic_0_0_post_processed_seamline_90mm_5.png",
+      "source_id": "caribou",
+      "size": 468341,
+      "sha256": "aba8f73c94f1ace98be25ce5a3b44cf5ce95c3f92f877d0b861fbc28542ebee4",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "path": "OWL_DATA/CAH_20220630_east_GRP_13_50mm_mosaic_0_0_post_processed_seamline_50mm_76.png",
+      "source_id": "caribou",
+      "size": 327629,
+      "sha256": "ecc0673753c687c84f5dd1acb3b2eb76494e061216ce88e4b68e848cdcff97df",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "path": "OWL_DATA/DJI_0005_0084_jpg.rf.af5d3e5de07b4635aa04759ab74e9148_0.jpg",
+      "source_id": "sheepcounter",
+      "size": 100434,
+      "sha256": "8567227ae0d0e84d47e2a50dfbae5a8164653a331ba4babb48d5309cf40c6f77",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "path": "OWL_DATA/DJI_0005_0137_jpg.rf.dd3794380c0d1c2adba5dd942d774102_0.jpg",
+      "source_id": "sheepcounter",
+      "size": 103463,
+      "sha256": "fa13b0eda657d59470d9bb9ae713f54191f3b8e0aed031343039082efbdd1c07",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

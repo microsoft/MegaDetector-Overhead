@@ -25,10 +25,11 @@ on [Zenodo](https://zenodo.org/records/20802844). See [Datasets](docs/datasets.m
 
 ## Documentation
 
-* [Installation](INSTALL.md) — full install + DINOv3 weights download
+* [Installation](INSTALL.md) — environment, notebook setup, and optional training backbone weights
+* [OWL inference notebook](notebooks/owl_inference_demo.ipynb) — OWL-D-first, annotation-free prediction on four patches; optional tiled full images and explicit CPU OWL-C
 * [Datasets](docs/datasets.md) — caribou data + pretrained model weights (Zenodo)
 * [Model Zoo](docs/model_zoo.md) — the OWL-C / OWL-D / OWL-T family + pretrained checkpoints
-* [Caribou Demo](docs/demo.md) — download → OWL inference (GPU/CPU) → visualize; run & compare all models (`tools/demo_caribou.sh`, `tools/demo_owl_models.sh`)
+* [Demos](docs/demo.md) — notebook setup/access notes and the existing caribou evaluation/model-comparison shell demos
 * [Training, Evaluation, and Inference](docs/training.md) — end-to-end workflow
 
 ---
@@ -55,7 +56,60 @@ source .venv/bin/activate
 python -c "import animaloc.models, dinov3; print('OK')"
 ```
 
-See [INSTALL.md](INSTALL.md) for DINOv3 weights download and troubleshooting.
+See [INSTALL.md](INSTALL.md) for troubleshooting and training-time DINOv3 weights.
+
+### Try the OWL inference notebook
+
+[`notebooks/owl_inference_demo.ipynb`](notebooks/owl_inference_demo.ipynb) uses
+the released **OWL-D / `OWLD_H`** checkpoint by default. It displays a six-image
+contact sheet, runs four 512×512 patches, and exports predicted counts,
+original-pixel coordinates, heatmaps, point overlays, and run metadata.
+Set `RUN_FULL_RESOLUTION=True` for the two 5472×3648 images with overlapping
+tiles, or separately enable your own image directory. No annotation files or
+accuracy metrics are involved.
+
+```bash
+# From a checkout containing the notebook and its backend:
+uv sync --locked --no-default-groups --group gpu --extra notebook
+.venv/bin/python -m jupyterlab notebooks/owl_inference_demo.ipynb
+```
+
+For CPU, use `uv sync --locked --extra notebook` and explicitly set
+`MODEL='owl-c'`, `DEVICE='cpu'` in the notebook. OWL-D never silently falls back
+to another model. Its approximately **3.5 GB** full checkpoint includes the
+frozen DINOv3 backbone; **no separate Meta weights download** is needed for this
+inference path. A compatible CUDA GPU and sufficient host/GPU memory are needed.
+Use the `.venv` interpreter directly after syncing; bare `uv run` can restore
+CPU PyTorch.
+
+**Local notebook execution verified (2026-09-08):** the full 23-cell notebook
+completed through nbclient with OWL-D on a V100 32 GB GPU in FP32, including
+all four patches and both 5472×3648 images (160 tiles each). A separate
+explicit OWL-C CPU notebook run also completed. Outputs include environment
+information, progress, tables, and inline figures. Reproduce with
+[`tests/execute_owl_notebook.py`](tests/execute_owl_notebook.py); see
+[runner commands and local artifacts](docs/demo.md#local-notebook-execution)
+and [backend counts/resource observations](docs/demo.md#local-backend-validation).
+These are inference results, not accuracy metrics.
+
+**Sample access:** the notebook downloads the exact `OWL_SAMPLE_DATA.zip`
+from [release owl-notebook-v1](https://github.com/microsoft/MegaDetector-Overhead/releases/tag/owl-notebook-v1).
+Set `ARCHIVE` to reuse a local copy instead. All sample sources and terms are documented:
+the contributor confirms SheepCounter Public Domain and HerdNet CC BY-NC-SA 4.0;
+the caribou release's CC BY-NC-SA 4.0 terms are verified from its primary source.
+Redistribution permission was confirmed by the sample provider.
+Do not substitute the caribou test ZIP. The notebook,
+backend, and manifest are distributed together. The configurable Colab setup uses a uv-managed
+Python backend rather than the hosted kernel, but **actual Colab validation is
+pending** and does not block the local release. Both model checkpoints have
+separately passed real clean-cache public downloads and published-checksum
+verification. The model/data release declares CC BY-NC-SA 4.0; see
+[dataset terms](docs/datasets.md#sample-provenance-and-publication-gates).
+The notebook is in this repository; the sample ZIP is a release asset outside
+Git history. The documented locked setup also installed and ran in a fresh
+environment without author Conda/PYTHONPATH dependencies; see
+[execution evidence](docs/demo.md#local-notebook-execution) for scope and
+intermittent model-download limitations.
 
 ---
 
@@ -65,6 +119,7 @@ See [INSTALL.md](INSTALL.md) for DINOv3 weights download and troubleshooting.
 animaloc/    # Training/eval package vendored from HerdNet (MIT)
 dinov3/      # DINOv3 encoder vendored from facebookresearch/dinov3 (DINOv3 License)
 tools/       # train.py, test.py, infer.py, patcher.py
+notebooks/   # OWL inference notebook and exact sample manifest
 configs/     # Hydra configs for OWL-C / OWL-D / OWL-T training and eval
 docs/        # MkDocs Material site (build with `make docs`)
 ```

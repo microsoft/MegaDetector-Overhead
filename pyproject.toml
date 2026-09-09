@@ -79,6 +79,12 @@ docs = [
     "mkdocs-material",
     "pymdown-extensions",
 ]
+notebook = [
+    "jupyterlab",
+    "ipykernel",
+    "nbformat",
+    "nbclient",
+]
 
 [project.urls]
 Homepage = "https://github.com/microsoft/MegaDetector-Overhead"

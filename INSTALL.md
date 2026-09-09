@@ -90,7 +90,13 @@ WANDB_MODE=disabled python tools/train.py train=owlc_smoketest
 
 See [`tests/README.md`](https://github.com/microsoft/MegaDetector-Overhead/blob/main/tests/README.md).
 
-## 4. Download DINOv3 weights (one-time, ~6 GB total)
+## 4. Download DINOv3 weights for training (one-time, ~6 GB total)
+
+**Skip this step for the OWL inference notebook.** The released `OWL-D.pth`
+is the approximately 3.5 GB **`OWLD_H`** checkpoint and already contains its
+frozen DINOv3 ViT-H+/16 backbone. The notebook backend constructs it with
+`pretrained=False`; no separate Meta download is required for this inference
+path. The DINOv3 license still applies.
 
 The OWL-D family loads DINOv3 ViT backbones at training time. Weights
 are NOT vendored (5.8 GB, governed by the
@@ -120,6 +126,98 @@ config.
 uv sync --extra dev    # adds pytest, ruff, mypy
 uv sync --extra docs   # adds mkdocs + material theme for building this site
 ```
+
+On an existing GPU environment, retain the group when adding extras, for
+example `uv sync --no-default-groups --group gpu --extra dev --extra docs`.
+
+## OWL inference notebook
+
+The optional `notebook` extra contains JupyterLab, ipykernel, nbformat, and
+nbclient. From a checkout containing
+[`notebooks/owl_inference_demo.ipynb`](notebooks/owl_inference_demo.ipynb)
+and `tools/demo_owl_notebook.py`, select **one** environment:
+
+```bash
+# Default notebook model: OWL-D / OWLD_H, compatible NVIDIA GPU required
+uv sync --locked --no-default-groups --group gpu --extra notebook
+
+# CPU alternative: explicitly set MODEL='owl-c', DEVICE='cpu' in the notebook
+# uv sync --locked --extra notebook
+
+.venv/bin/python -m ipykernel install --user \
+    --name megadetector-overhead --display-name "MegaDetector Overhead"
+.venv/bin/python -m jupyterlab notebooks/owl_inference_demo.ipynb
+```
+
+In VS Code, open the notebook and choose **MegaDetector Overhead** or the
+checkout's `.venv` Python kernel. On Windows, replace `.venv/bin/python` with
+`.venv\Scripts\python.exe`. Launch Jupyter from the repository root so the
+notebook's local artifact links are accessible.
+
+Local notebook setup reuses the existing `.venv` without automatically syncing
+or changing its PyTorch build. It checks the backend first and prints repair
+commands if required packages or the supported interpreter are missing.
+All preparation/inference stages run as subprocesses through that interpreter;
+the notebook kernel uses only standard-library/IPython presentation code.
+Continue using `.venv/bin/python` or the activated environment, not bare
+`uv run`, after a GPU sync.
+
+The default requires a compatible CUDA GPU, sufficient host/GPU memory, and
+disk space for the environment, the approximately 3.5 GB full OWL-D checkpoint,
+and outputs. The environment stage checks resources **before** sample/model
+downloads. CPU is an explicit general OWL-C selection, not an automatic
+substitution. Four 512×512 patches run by default; full 5472×3648 images use
+tiling only when `RUN_FULL_RESOLUTION=True`.
+
+**Observed local backend resources (2026-09-08):** real OWL-D inference
+succeeded in FP32 on a Tesla V100 32 GB, with **3.543 GiB peak PyTorch GPU
+allocation** for the four patches and **3.5815 GiB** for both 5472×3648 images
+(160 tiles each). These observed approximately **3.6 GiB GPU tensor
+allocations are not a universal minimum memory requirement**: allocator
+reservations, CUDA/kernel overhead, and other memory use differ. Explicit
+OWL-C CPU patch inference also succeeded.
+
+**Local notebook execution is verified:** nbclient completed the 23-cell
+notebook with OWL-D on the four patches and both full-resolution images, and
+completed a separate explicitly configured OWL-C CPU notebook run. Environment
+information, progress, and inline figures were captured. Reproduce with
+[`tests/execute_owl_notebook.py`](tests/execute_owl_notebook.py); commands and
+ignored executed-artifact paths are in
+[local notebook execution](docs/demo.md#local-notebook-execution).
+The source notebook intentionally retains cleared outputs. Separately, both
+OWL-D and OWL-C have passed fresh public downloads into isolated caches and
+published-checksum verification. The model release declares CC BY-NC-SA 4.0;
+review its terms and the included DINOv3 terms. Colab remains experimental.
+
+### Colab setup path — not yet verified
+
+Open/upload the notebook in Colab, choose a compatible GPU runtime for OWL-D,
+and configure `REPO_REF` to a published branch, tag, or commit containing the
+notebook, backend, and sample manifest, such as `owl-notebook-v1`. Setup clones only into
+an absent dedicated directory; an existing checkout is validated, never reset,
+pulled over local changes, or overwritten. `REPO_PATH` can select an existing
+development checkout.
+
+Hosted Python may be outside `>=3.11,<3.13`. When the backend is absent or
+incomplete, the Colab setup installs `uv` with pip if needed, then runs
+`uv sync --locked --python 3.11 --no-default-groups --group gpu --extra notebook`
+in the checkout (or the `cpu` group for explicit CPU OWL-C). Stages call the
+resulting `.venv` Python; PyTorch and `animaloc` are not imported into the
+hosted kernel. `RESYNC_COLAB_ENVIRONMENT=True` is an explicit environment
+repair/update option; setup does not otherwise replace a ready backend.
+
+This is an implemented setup path, **not a claim of successful Colab
+execution**. Actual hosted validation is required before advertising support,
+but Colab does not block the supported local Jupyter/VS Code release.
+The notebook and its backend are distributed together, and the manifest
+downloads the sample ZIP from the `owl-notebook-v1` release with accompanying
+attribution and licenses. SheepCounter Public Domain and HerdNet CC BY-NC-SA 4.0
+were confirmed by the contributor; caribou source terms and fresh
+pinned-checkpoint downloads are verified, although Zenodo requests can fail
+intermittently. Set `ARCHIVE` to use a local copy of the exact sample ZIP;
+an empty `SAMPLE_URL` uses the public manifest URL. See
+[demo documentation](docs/demo.md#owl-inference-notebook) and
+[sample access notes](docs/datasets.md#owl-notebook-sample-images).
 
 ## Python version
 

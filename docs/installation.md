@@ -47,10 +47,13 @@ python -c "import animaloc.models, dinov3; print('OK')"
 
 ## Requirements
 
-* Python ≥ 3.11 (DINOv3 requires PEP 604 syntax).
+* Python ≥ 3.11 and < 3.13 for the project backend.
 * Linux x86_64 with glibc ≥ 2.28. Other platforms work but are untested.
-* ~6 GB free for DINOv3 weights (downloaded separately — see
+* ~6 GB free for separate DINOv3 training weights (see
   [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md)).
+  The OWL inference notebook instead uses the approximately 3.5 GB full
+  `OWL-D.pth` / `OWLD_H` checkpoint, which already includes its frozen
+  backbone and requires no separate Meta download.
 * CUDA-capable GPU recommended for training; CPU works for small
   inference jobs.
 
@@ -80,7 +83,38 @@ re-syncs to the CPU default); use the activated venv. Full details, including ho
 to add a `cu128` group for Blackwell GPUs, are in
 [INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md).
 
+## OWL inference notebook
+
+Install the notebook extra while preserving your selected PyTorch group:
+
+```bash
+uv sync --locked --no-default-groups --group gpu --extra notebook
+.venv/bin/python -m jupyterlab notebooks/owl_inference_demo.ipynb
+```
+
+For CPU instead, use `uv sync --locked --extra notebook` and explicitly select
+`MODEL='owl-c'`, `DEVICE='cpu'` in the notebook. Default OWL-D requires CUDA and
+never silently substitutes another model. In VS Code, select the checkout's
+`.venv` kernel; optional named-kernel registration and Windows commands are in
+[INSTALL.md](https://github.com/microsoft/MegaDetector-Overhead/blob/main/INSTALL.md#owl-inference-notebook).
+Local setup reuses the existing backend without automatically re-syncing it.
+
+The Colab setup path uses a configurable repository ref and a uv-managed
+Python 3.11 backend, even if the hosted kernel has a different Python version.
+It clones only into an absent dedicated directory and validates existing
+checkouts without resetting them. **Actual Colab validation is pending** and
+does not block the local Jupyter/VS Code release;
+use `REPO_REF='owl-notebook-v1'` for the matching release.
+The manifest downloads the exact sample ZIP from that GitHub release.
+SheepCounter Public Domain, HerdNet CC BY-NC-SA 4.0,
+and caribou CC BY-NC-SA 4.0 terms are documented with their evidence sources;
+both public model downloads and their published checksums have
+been verified in isolated caches, although network requests may fail
+intermittently. Set `ARCHIVE` to use the exact `OWL_SAMPLE_DATA.zip` locally
+instead. See [demo/access details](demo.md#owl-inference-notebook).
+
 ## Next steps
 
 * [Training, Evaluation, and Inference](training.md) — end-to-end workflow
 * [Model Zoo](model_zoo.md) — the OWL-C / OWL-D / OWL-T family
+* [Demos](demo.md) — OWL inference notebook and existing caribou shell workflows

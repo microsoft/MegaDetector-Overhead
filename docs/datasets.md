@@ -1,5 +1,5 @@
 ---
-description: "Caribou aerial survey dataset for training and evaluating overhead wildlife detectors. Point-annotated 512×512 patches from the Porcupine and Central Arctic herds."
+description: "OWL notebook sample access and provenance gates, plus the annotated Caribou Aerial Survey Dataset and released model checkpoints."
 tags:
   - datasets
   - caribou
@@ -11,6 +11,125 @@ tags:
 ---
 
 # Datasets
+
+## OWL notebook sample images
+
+The [OWL inference notebook](demo.md#owl-inference-notebook) uses a separate,
+exact sample archive named **`OWL_SAMPLE_DATA.zip`**, not the caribou training
+or test ZIPs below. It is an annotation-free visual demonstration, not an
+evaluation dataset.
+
+| Property | Supplied archive |
+|---|---|
+| Archive size | 18,269,117 bytes (approximately 18.3 MB) |
+| Uncompressed image bytes | 18,281,181 |
+| Default inference inputs | Four RGB 512×512 patches |
+| Optional full-image inputs | Two RGB 5472×3648 images |
+| Archive image directory | `OWL_DATA/` |
+| Default extraction directory | `demo_data/owl_notebook/OWL_DATA/` |
+| Annotations | None; no ground-truth CSV, species labels, or evaluation metrics |
+| Integrity/inventory record | `notebooks/sample_data.json` in the matching notebook checkout |
+| Exact public archive URL | [OWL_SAMPLE_DATA.zip, release owl-notebook-v1](https://github.com/microsoft/MegaDetector-Overhead/releases/download/owl-notebook-v1/OWL_SAMPLE_DATA.zip) |
+| Per-source attribution/license documentation | SheepCounter: Public Domain; HerdNet and caribou: CC BY-NC-SA 4.0; evidence provenance recorded per source |
+
+Notebook preparation downloads the exact ZIP from the manifest URL.
+`ARCHIVE` selects an existing local copy instead. `SAMPLE_URL` defaults to an
+empty string so the manifest is the single source of the release URL.
+Preparation verifies archive
+integrity and the expected image inventory, safely extracts the files, and
+generates `contact_sheet.png` and `sample_inventory.csv` in
+`demo_data/owl_notebook/`. Valid local files are checked and reused on reruns.
+Missing inputs or integrity failures produce explicit errors.
+
+### Sample provenance and publication gates
+
+The sample provider **has confirmed redistribution is permitted** and supplied
+the following mapping. It is recorded per file in `notebooks/sample_data.json`,
+not inferred solely from filenames.
+
+| Images | Source | Terms and evidence |
+|---|---|---|
+| Two `DJI_...` patches | [SheepCounter](https://universe.roboflow.com/riisprivate/sheepcounter) | **Public Domain**, explicitly confirmed by the contributor on 2026-09-09. The source acknowledgment is retained; no specific CC0 instrument is inferred. |
+| Two full-resolution hashed-name JPGs | [HerdNet-associated dataset, DOI 10.58119/ULG/MIRUU5](https://dataverse.uliege.be/dataset.xhtml?persistentId=doi:10.58119/ULG/MIRUU5) | **CC BY-NC-SA 4.0**, explicitly confirmed by the contributor on 2026-09-09. Retain original dataset/creator attribution through the source DOI and the license notice. |
+| Two `CAH_...` patches | [OWL models and caribou data, Zenodo 20802844](https://zenodo.org/records/20802844) | Primary record metadata and release README declare [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). The README requests citation of Chacon et al. (2026), the OWL paper, arXiv:2606.13911. |
+
+The Zenodo terms were checked against the
+[record API](https://zenodo.org/api/records/20802844) and
+[released README](https://zenodo.org/api/records/20802844/files/README.md/content).
+Retain source credit, the license link, and applicable change notices.
+CC BY-NC-SA includes noncommercial and share-alike conditions; do not treat
+public access as unrestricted reuse. The software repository's MIT license
+does **not** apply to the mixed-source sample imagery.
+
+The SheepCounter and HerdNet license statements are contributor-confirmed,
+not independently retrieved from their source pages in this environment.
+This evidence distinction is retained in the manifest.
+
+Keep the original ZIP bytes unchanged. Its attribution and source-specific
+terms accompany it in the staged `SAMPLE_ATTRIBUTION.json` and release notes;
+they are not inserted into the archive. See
+[release preparation](demo.md#repository-publication-and-sample-release-preparation).
+
+For each public notebook release, retain:
+
+1. A stable, public URL for the exact archive, with checksum-verified clean
+   download access and a corresponding manifest update.
+2. Include the documented source-specific terms, creator/source credits,
+   license links, and accompanying redistribution notice with the release asset.
+3. A public repository ref containing the matching notebook, backend, and
+   manifest, verified without private paths or credentials.
+4. Fresh access to the pinned public model checkpoints, distinct from
+   successful use of cached local weights.
+5. Execution evidence for the routes being advertised. The local OWL-D
+   patch/full-image and explicit OWL-C CPU notebooks have now completed
+   through nbclient (see [local notebook execution](demo.md#local-notebook-execution)).
+   The implemented **Colab setup path remains experimental**. It does not
+   block local Jupyter/VS Code release, but must be tested in an actual hosted
+   runtime before advertising hosted support.
+
+No archive upload or public release is performed by notebook execution.
+A fresh clone downloads the exact sample archive from the published manifest
+URL. For your own authorized image directory, the notebook has a separate
+`RUN_CUSTOM_IMAGES=True` / `CUSTOM_IMAGES_DIR` option with no annotation
+requirement. The sum of retained localization peaks is not a population or
+accuracy estimate, and FIDT heatmap sums are not animal counts.
+
+### Notebook model checkpoint
+
+The default `OWL-D.pth` in the existing
+[Zenodo model release](https://zenodo.org/records/20802844) is the approximately
+3.5 GB full **`OWLD_H`** checkpoint, including its frozen DINOv3 ViT-H+/16
+backbone. The notebook loads it with `pretrained=False`, without a separate
+Meta weights download. Check applicable model and
+[DINOv3 license terms](https://github.com/microsoft/MegaDetector-Overhead/blob/main/dinov3/LICENSE.md);
+checkpoint access does not resolve sample-image licensing.
+
+Weights are cached under `demo_data/models/OWL-D.pth` or, for the explicit
+CPU alternative, `demo_data/models/OWL-C.pth`. CPU users choose the **general**
+OWL-C model, not the separate caribou-specific checkpoint. CUDA is required
+for the notebook's default OWL-D route; it never silently swaps models.
+Public model-download availability must be verified independently of cached
+local model integrity.
+
+As of the **2026-09-08 local validation checkpoint**, OWL-D CUDA patch and
+full-resolution backend runs, plus explicit OWL-C CPU patch inference,
+succeeded using cached weights (see
+[backend evidence](demo.md#local-backend-validation)). Complete local nbclient
+executions also succeeded for the OWL-D patch/full-image notebook and explicit
+OWL-C CPU notebook. The recorded checkpoint
+SHA-256 pins and file sizes have now been independently confirmed by the
+[published release README](https://zenodo.org/api/records/20802844/files/README.md/content);
+the cached files also match the record API's MD5 checksums. The release declares
+**CC BY-NC-SA 4.0** for its models and caribou data; consult the release terms
+and the additional DINOv3 terms for the included backbone. Clean-download
+verification is separate from source metadata checks and from sample hosting.
+Both OWL-D and OWL-C have now downloaded successfully from the public release
+into initially empty isolated caches, matching the published sizes/SHA-256
+hashes and leaving the working model cache unchanged.
+The sample URL and source-specific terms are recorded in the manifest;
+model and sample assets remain independently checksum-verified.
+
+---
 
 ## Caribou Aerial Survey Dataset
 

@@ -1,5 +1,62 @@
 # MegaDetector-Overhead smoke tests
 
+## OWL notebook helper tests
+
+These focused tests use temporary images and synthetic heatmaps, without network
+access or released model weights:
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -p 'test_owl_demo.py' -v
+```
+
+They cover verified sample extraction/cache reuse, invalid archives and downloads,
+explicit model/device choices, small/odd/multi-tile inputs, original-pixel
+coordinates, threshold/count consistency, empty detections, saved overlays,
+source mapping, exact release-asset staging, and isolated model-cache selection.
+
+Real-asset checks for the notebook backend:
+
+```bash
+python tools/demo_owl_notebook.py prepare
+python tools/demo_owl_notebook.py infer \
+    --images-dir demo_data/owl_notebook/OWL_DATA \
+    --selection patches --output-dir demo_data/owl_notebook/check_owld_patches
+python tools/demo_owl_notebook.py infer \
+    --images-dir demo_data/owl_notebook/OWL_DATA \
+    --selection full --output-dir demo_data/owl_notebook/check_owld_full
+python tools/demo_owl_notebook.py infer --model owl-c --device cpu \
+    --images-dir demo_data/owl_notebook/OWL_DATA \
+    --selection patches --output-dir demo_data/owl_notebook/check_owlc_cpu
+```
+
+Use a new output directory on each run. The default OWL-D route requires CUDA;
+the third command explicitly selects OWL-C for CPU. These samples have no ground
+truth, so predicted counts are not accuracy measurements.
+
+For actual notebook validation, install the `notebook` extra while preserving
+your selected CPU/GPU dependency group. This runner executes **all notebook
+cells from a fresh kernel** and only changes configuration in the executed copy:
+
+```bash
+python tests/execute_owl_notebook.py --full \
+    --output demo_data/owl_notebook/executed_owld.ipynb
+python tests/execute_owl_notebook.py --model owl-c --device cpu \
+    --output demo_data/owl_notebook/executed_owlc_cpu.ipynb
+```
+
+Choose a new output filename on reruns. The runner retains partial output if a
+cell fails and returns the execution error, rather than treating it as success.
+Executed artifacts belong in ignored `demo_data/`, not in the source notebook.
+The full-resolution switch processes both large images without resizing.
+Keep source notebook outputs cleared.
+Use `--model-cache PATH` to select a separate model cache in the executed
+notebook without changing its source or the existing default cache.
+Local backend checks do not establish that hosted Colab or public asset
+downloads work; test those paths separately before release.
+
+## Existing training and forward-pass smoke tests
+
 Minimal end-to-end smoke tests that verify a fresh install can:
 
 1. **Construct and forward-pass all 6 OWL models** (OWL-C, OWL-T,

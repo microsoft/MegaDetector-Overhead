@@ -34,8 +34,9 @@ weights
 
 # Demo data (downloaded from Zenodo at runtime — large, not tracked)
 demo_data/
+/OWL_SAMPLE_DATA.zip
+.ipynb_checkpoints/
 
 # Local secrets / credentials
 *.pem
 *.key
-
